@@ -1,36 +1,39 @@
-const mysql = require('mysql');
-const redis = require('redis');
+import mysql from 'mysql';
+import redis from 'redis';
 
-const conLocal = mysql.createConnection({
-    host: "149.56.182.49",
-    user: "root",
-    password: "585hHtFwZ3icyHBu",
-    database: "asigna_data",
-    port: 44341
+const redisHost = process.env.REDIS_HOST;
+const redisPort = process.env.REDIS_PORT;
+const redisPassword = process.env.REDIS_PASSWORD;
+
+const databaseHost = process.env.DATABASE_HOST;
+const databasePort = process.env.DATABASE_PORT;
+const databaseUser = process.env.DATABASE_USER;
+const databasePassword = process.env.DATABASE_PASSWORD;
+const databaseName = process.env.DATABASE_NAME;
+
+export const conLocal = mysql.createConnection({
+    host: databaseHost,
+    user: databaseUser,
+    password: databasePassword,
+    database: databaseName,
+    port: databasePort
 });
-
 
 conLocal.connect((err) => {
     if (err) {
         console.error("Error de conexión:", err);
         return;
     }
-    console.log("Conectado a la base de datos");
 });
 
-
-const redisClient = redis.createClient({
+export const redisClient = redis.createClient({
     socket: {
-        host: '192.99.190.137',
-        port: 50301,
+        host: redisHost,
+        port: redisPort,
     },
-    password: 'sdJmdxXC8luknTrqmHceJS48NTyzExQg',
+    password: redisPassword,
 });
 
 redisClient.on('error', (err) => {
     console.error('Error al conectar con Redis:', err);
 });
-
-module.exports = {redisClient,conLocal};
-
-
