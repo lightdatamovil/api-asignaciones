@@ -52,13 +52,6 @@ async function loadCompaniesFromRedis() {
         const companysDataJson = await redisClient.get('empresasData');
         companiesList = companysDataJson ? Object.values(JSON.parse(companysDataJson)) : [];
     } catch (error) {
-        console.log({
-            socket: {
-                host: redisHost,
-                port: redisPort,
-            },
-            password: redisPassword,
-        })
         console.error("Error al cargar las empresas desde Redis:", error);
         throw error;
     }

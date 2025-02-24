@@ -1,7 +1,7 @@
 import { executeQuery, getDbConfig, getProdDbConfig } from '../db.js';
 import mysql from 'mysql';
 
-export async function asignar(company, userId, dataQr, driverId) {
+export async function asignar(company, userId, dataQr, driverId, deviceFrom) {
     const dbConfig = getProdDbConfig(company);
     const dbConnection = mysql.createConnection(dbConfig);
     dbConnection.connect();
@@ -17,12 +17,11 @@ export async function asignar(company, userId, dataQr, driverId) {
         const asignadoRows = await executeQuery(dbConnection, sqlAsignado, [shipmentId, driverId]);
 
         if (asignadoRows.length > 0) {
-            throw new Error("El paquete ya se encuentra asignado a este chofer.");
+            return { success: false, mensaje: "El paquete ya se encuentra asignado a este chofer." };
         }
 
         const estadoQuery = `SELECT estado FROM envios_historial WHERE superado=0 AND elim=0 AND didEnvio = ?`;
-        console.log("estadoQuery:", estadoQuery);
-        console.log("shipmentId:", shipmentId);
+
         const estadoRows = await executeQuery(dbConnection, estadoQuery, [shipmentId]);
 
         if (estadoRows.length === 0) {
@@ -34,12 +33,14 @@ export async function asignar(company, userId, dataQr, driverId) {
         await crearTablaAsignaciones(company.did, dbConnection);
         await crearUsuario(company.did, dbConnection);
 
-        const insertSql = `INSERT INTO envios_asignaciones (did, operador, didEnvio, estado, quien, desde) VALUES ("", ?, ?, ?, ?, 'Movil')`;
-        const result = await executeQuery(dbConnection, insertSql, [, driverId, shipmentId, estado, userId]);
+        const insertSql = `INSERT INTO envios_asignaciones (did, operador, didEnvio, estado, quien, desde) VALUES (?, ?, ?, ?, ?, ?)`;
+
+        const result = await executeQuery(dbConnection, insertSql, ["", driverId, shipmentId, estado, userId, deviceFrom]);
 
         const did = result.insertId;
 
         const queries = [
+            { sql: `UPDATE envios_asignaciones SET did = ? WHERE superado=0 AND elim=0 AND id = ?`, values: [did, did] },
             { sql: `UPDATE envios_asignaciones SET superado = 1 WHERE superado=0 AND elim=0 AND didEnvio = ? AND did != ?`, values: [shipmentId, did] },
             { sql: `UPDATE envios SET choferAsignado = ? WHERE superado=0 AND elim=0 AND did = ?`, values: [driverId, shipmentId] },
             { sql: `UPDATE ruteo_paradas SET superado = 1 WHERE superado=0 AND elim=0 AND didPaquete = ?`, values: [shipmentId] },
@@ -51,9 +52,9 @@ export async function asignar(company, userId, dataQr, driverId) {
             await executeQuery(dbConnection, sql, values);
         }
 
-        await insertAsignacionesDB(company.did, did, driverId, estado, userId, 0);
+        await insertAsignacionesDB(company.did, did, driverId, estado, userId, deviceFrom);
 
-        return { message: "Paquete asignado correctamente." };
+        return { success: true, mensaje: "Asignación realizada correctamente" };
     } catch (error) {
         console.error("Error al asignar paquete:", error);
         throw error;
@@ -62,7 +63,7 @@ export async function asignar(company, userId, dataQr, driverId) {
     }
 }
 
-export async function desasignar(company, dataQr) {
+export async function desasignar(company, userId, dataQr, deviceFrom) {
     const dbConfig = getProdDbConfig(company);
     const dbConnection = mysql.createConnection(dbConfig);
     dbConnection.connect();
@@ -74,18 +75,34 @@ export async function desasignar(company, dataQr) {
             ? await idFromFlexShipment(dataQr.id, dbConnection)
             : await idFromLightdataShipment(company, dataQr, dbConnection);
 
+        const sqlOperador = "SELECT operador FROM envios_asignaciones WHERE didEnvio = ? AND superado = 0 AND elim = 0";
+
+        const result = await executeQuery(dbConnection, sqlOperador, [shipmentId]);
+
+        const operador = result.length > 0 ? result[0].operador : 0;
+
+        if (operador == 0) {
+            return { success: false, mensaje: "El paquete ya está desasignado" };
+        }
+
         if (!shipmentId) {
             throw new Error("No se pudo obtener el id del envío.");
         }
 
+        const insertQuery = "INSERT INTO envios_asignaciones (did, operador, didEnvio, estado, quien, desde) VALUES (?, ?, ?, ?, ?, ?)";
+
+        const resultInsertQuery = await executeQuery(dbConnection, insertQuery, ["", 0, shipmentId, 0, userId, deviceFrom]);
+
         // Actualizar asignaciones
-        await executeQuery(dbConnection, `UPDATE envios_asignaciones SET superado=1 WHERE superado=0 AND elim=0 AND didEnvio = ?`, [shipmentId]);
+        await executeQuery(dbConnection, `UPDATE envios_asignaciones SET superado=1, did=${resultInsertQuery.insertId} WHERE superado=0 AND elim=0 AND didEnvio = ?`, [shipmentId]);
 
         // Actualizar historial
         await executeQuery(dbConnection, `UPDATE envios_historial SET didCadete=0 WHERE superado=0 AND elim=0 AND didEnvio = ?`, [shipmentId]);
 
         // Desasignar chofer
         await executeQuery(dbConnection, `UPDATE envios SET choferAsignado = 0 WHERE superado=0 AND elim=0 AND did = ?`, [shipmentId]);
+
+        return { success: true, mensaje: "Desasignación realizada correctamente" };
     } catch (error) {
         console.error("Error al desasignar paquete:", error);
         throw error;
@@ -192,7 +209,7 @@ async function crearUsuario(companyId) {
     }
 }
 
-async function insertAsignacionesDB(companyId, shipmentId, driverId, shipmentState, userId, dateFrom) {
+async function insertAsignacionesDB(companyId, shipmentId, driverId, shipmentState, userId, deviceFrom) {
     const dbConfig = getDbConfig();
     const dbConnection = mysql.createConnection(dbConfig);
     dbConnection.connect();
@@ -206,10 +223,10 @@ async function insertAsignacionesDB(companyId, shipmentId, driverId, shipmentSta
             await executeQuery(dbConnection, updateSql, [existingRecords[0].id]);
 
             const insertSql = `INSERT INTO asignaciones_${companyId} (didenvio, chofer, estado, quien, desde) VALUES (?, ?, ?, ?, ?)`;
-            await executeQuery(dbConnection, insertSql, [shipmentId, driverId, shipmentState, userId, dateFrom]);
+            await executeQuery(dbConnection, insertSql, [shipmentId, driverId, shipmentState, userId, deviceFrom]);
         } else {
             const insertSql = `INSERT INTO asignaciones_${companyId} (didenvio, chofer, estado, quien, desde) VALUES (?, ?, ?, ?, ?)`;
-            await executeQuery(dbConnection, insertSql, [shipmentId, driverId, shipmentState, userId, dateFrom]);
+            await executeQuery(dbConnection, insertSql, [shipmentId, driverId, shipmentState, userId, deviceFrom]);
         }
     } catch (error) {
         console.error("Error al insertar asignaciones en la base de datos:", error);
