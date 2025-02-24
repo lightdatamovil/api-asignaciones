@@ -1,8 +1,12 @@
 import { Router } from 'express';
+import { asignar, desasignar } from '../controller/asignacionesController.js';
+import { verifyParamaters } from '../src/funciones/verifyParameters.js';
+import { getCompanyById } from '../db.js';
+
 const asignaciones = Router();
 
-asignaciones.post('/api/asignar', async (req, res) => {
-    const errorMessage = verifyParamaters(req.body, ['dataQr', 'driver']);
+asignaciones.post('/asignar', async (req, res) => {
+    const errorMessage = verifyParamaters(req.body, ['dataQr', 'driverId']);
 
     if (errorMessage) {
         return res.status(400).json({ message: errorMessage });
@@ -15,18 +19,18 @@ asignaciones.post('/api/asignar', async (req, res) => {
     }
 
     try {
+        const company = await getCompanyById(companyId);
 
-        const result = await asignar();
+        const result = await asignar(company, userId, dataQr, driver);
 
         res.status(200).json({ body: result, message: "Asignación realizada correctamente" });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
-
 });
 
-asignaciones.post('/api/desasignar', async (req, res) => {
-    const errorMessage = verifyParamaters(req.body, ['dataQr', 'driver']);
+asignaciones.post('/desasignar', async (req, res) => {
+    const errorMessage = verifyParamaters(req.body, ['dataQr', 'driverId']);
 
     if (errorMessage) {
         return res.status(400).json({ message: errorMessage });
@@ -39,7 +43,9 @@ asignaciones.post('/api/desasignar', async (req, res) => {
     }
 
     try {
-        const result = await desasignar();
+        const company = await getCompanyById(companyId);
+
+        const result = await desasignar(company, dataQr);
 
         res.status(200).json({ body: result, message: "Asignación realizada correctamente" });
     } catch (error) {
