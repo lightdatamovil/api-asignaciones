@@ -10,7 +10,7 @@ export async function asignar(company, userId, dataQr, driverId, deviceFrom) {
         const isFlex = dataQr.hasOwnProperty("sender_id");
 
         const shipmentId = isFlex
-            ? await idFromFlexShipment(dataQr.did, dbConnection)
+            ? await idFromFlexShipment(dataQr.id, dbConnection)
             : await idFromLightdataShipment(company, dataQr, dbConnection);
 
         const sqlAsignado = `SELECT id, estado FROM envios_asignaciones WHERE superado=0 AND elim=0 AND didEnvio = ? AND operador = ?`;
@@ -112,9 +112,9 @@ export async function desasignar(company, userId, dataQr, deviceFrom) {
 }
 
 async function idFromLightdataShipment(company, dataQr, dbConnection) {
-    const companyIdFromShipment = JSON.parse(dataQr).empresa;
+    const companyIdFromShipment = dataQr.empresa;
 
-    const shipmentId = JSON.parse(dataQr).did;
+    const shipmentId = dataQr.did;
 
     if (company.did != companyIdFromShipment) {
         try {
@@ -145,7 +145,7 @@ async function idFromFlexShipment(shipmentId, dbConnection) {
             const didenvio = rows[0].did;
             return didenvio;
         } else {
-            throw new Error("El paquete flexible no se encontró en la base de datos.");
+            throw new Error("El paquete flex no se encontró en la base de datos.");
         }
     } catch (error) {
         throw error;
