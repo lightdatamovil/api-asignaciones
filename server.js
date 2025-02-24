@@ -1,6 +1,7 @@
 import express from 'express';
 import { json } from 'body-parser';
 import asignaciones from './routes/asignaciones';
+import { getDbConfig } from './db';
 
 const app = express();
 app.use(json({ limit: '50mb' }));
@@ -8,6 +9,8 @@ app.use(urlencoded({ limit: '50mb', extended: true }));
 app.use(json());
 
 const PORT = process.env.PORT || 3000;
+const dbAsignacionesInfo = getDbConfig();
+export const conLocal = mysql.createConnection(dbAsignacionesInfo);
 
 app.use("/api/asignaciones", asignaciones)
 

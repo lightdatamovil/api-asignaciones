@@ -1,10 +1,7 @@
-
-
-
-const mysql = require('mysql');
+import { createConnection, format } from 'mysql';
 async function crearLog(idEmpresa, operador, endpoint, result, quien, idDispositivo, modelo, marca, versionAndroid, versionApp) {
     const dbConfig = getDbConfig(company.did);
-    const dbConnection = mysql.createConnection(dbConfig);
+    const dbConnection = createConnection(dbConfig);
 
     return new Promise((resolve, reject) => {
         dbConnection.connect((err) => {
@@ -12,23 +9,11 @@ async function crearLog(idEmpresa, operador, endpoint, result, quien, idDisposit
                 return reject({ error: "error", details: err.message });
             }
 
-            const sql = `
-                INSERT INTO logs (company, operador, request, response, quien, dispositivo, uid, appversion)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            `;
+            const fechaunix = Date.now();
+            const sqlLog = `INSERT INTO logs (didempresa, quien, cadete, data, fechaunix) VALUES (?, ?, ?, ?, ?)`;
 
-            const values = [
-                idEmpresa,
-                operador,
-                endpoint,
-                JSON.stringify(result),
-                quien,
-                `${modelo} ${marca} ${versionAndroid}`,
-                idDispositivo,
-                versionApp
-            ];
-
-            const queryString = mysql.format(sql, values);
+            await conLocal.query(sqlLog, [empresa, quien, cadete, JSON.stringify(dataQR), fechaunix]);
+            const queryString = format(sql, values);
 
             dbConnection.query(sql, values, (err, results) => {
                 dbConnection.end();
@@ -41,4 +26,4 @@ async function crearLog(idEmpresa, operador, endpoint, result, quien, idDisposit
         });
     });
 }
-module.exports = crearLog;
+export default crearLog;

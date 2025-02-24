@@ -8,10 +8,15 @@ asignaciones.post('/api/asignar', async (req, res) => {
         return res.status(400).json({ message: errorMessage });
     }
 
-    try {
-        const { companyId, dataQr, driver } = req.body;
+    const { companyId, userId, dataQr, driver } = req.body;
 
-        const result = await handleOperador(dataEntrada, res);
+    if (companyId == 12 && userId == 49) {
+        return res.status(200).json({ message: "Comunicarse con la logística." });
+    }
+
+    try {
+
+        const result = await asignar();
 
         res.status(200).json({ body: result, message: "Asignación realizada correctamente" });
     } catch (error) {
@@ -27,10 +32,14 @@ asignaciones.post('/api/desasignar', async (req, res) => {
         return res.status(400).json({ message: errorMessage });
     }
 
-    try {
-        const { companyId, dataQr, driver } = req.body;
+    const { companyId, userId, dataQr } = req.body;
 
-        const result = await handleOperador(dataEntrada, res);
+    if (companyId == 12 && userId == 49) {
+        return res.status(200).json({ message: "Comunicarse con la logística." });
+    }
+
+    try {
+        const result = await desasignar();
 
         res.status(200).json({ body: result, message: "Asignación realizada correctamente" });
     } catch (error) {

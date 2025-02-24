@@ -1,125 +1,45 @@
-import { conLocal, redisClient } from '../db';
-import { createServer } from 'http';
+import { conLocal, executeQuery } from '../db';
 import { escape, createConnection } from 'mysql';
-import { decode } from 'querystring';
 
-async function handleOperador(dataEntrada, res) {
-    const { empresa, cadete, quien, dataQR } = dataEntrada;
+async function idFromLightdataShipment(companyId, dataQr) {
+    const shipmentCompany = dataQr.empresa;
+    const shipmentId = dataQr.did;
 
-    if (empresa == 12 && quien == 49) {
-        return sendResponse(res, { estado: false, mensaje: "Comunicarse con la logística." });
-    }
-
-    const fechaunix = Date.now();
-    const sqlLog = `INSERT INTO logs (didempresa, quien, cadete, data, fechaunix) VALUES (?, ?, ?, ?, ?)`;
-
-    try {
-        await conLocal.query(sqlLog, [empresa, quien, cadete, JSON.stringify(dataQR), fechaunix]);
-
-    } catch (err) {
-        console.error("Error al insertar en logs:", err);
-    }
-
-    try {
-        const dataQRParsed = dataQR
-
-        const Aempresas2 = await iniciarProceso()
-
-        if (!Aempresas2[empresa]) {
-            return sendResponse(res, { estado: false, mensaje: "No está cargado el ID de la empresa" });
-        }
-
-        const AdataDB = Aempresas2[empresa];
-        if (!AdataDB.dbname || !AdataDB.dbuser || !AdataDB.dbpass) {
-            return sendResponse(res, { estado: false, mensaje: "Error al conectar a la DB" });
-        }
-
-        const con = createConnection({
-            host: "bhsmysql1.lightdata.com.ar",
-            user: AdataDB.dbuser,
-            password: AdataDB.dbpass,
-            database: AdataDB.dbname
-        });
-
-        con.connect(err => {
-            if (err) {
-                return sendResponse(res, { estado: false, mensaje: err.message });
-            }
-        });
-
-        const isFlex = dataQRParsed.hasOwnProperty("sender_id");
-        const didenvio = isFlex ? 0 : dataQRParsed.did;
-
-        if (!isFlex) {
-
-
-            handleRegularPackage(didenvio, empresa, cadete, quien, con, res, dataQRParsed);
-        } else {
-            handleFlexPackage(dataQRParsed.id, con, cadete, empresa, res);
-        }
-    } catch (error) {
-        console.error("Error en el manejo del operador:", error);
-        sendResponse(res, { estado: false, mensaje: "Error en el procesamiento de la solicitud." });
-    }
-}
-
-async function handleRegularPackage(didenvio, empresa, cadete, quien, con, res, dataQRParsed) {
-    const didempresapaquete = dataQRParsed.empresa;
-
-
-
-    if (empresa != didempresapaquete) {
-        const sql = `SELECT didLocal FROM envios_exteriores WHERE superado=0 AND elim=0 AND didExterno = ? AND didEmpresa = ?`;
+    if (empresa != shipmentCompany) {
         try {
-            const rows = await query(con, sql, [didenvio, didempresapaquete]);
-            const Aresult = rows;
+            const sql = `SELECT didLocal FROM envios_exteriores WHERE superado=0 AND elim=0 AND didExterno = ? AND didEmpresa = ?`;
+            const rows = await executeQuery(conLocal, sql, [shipmentCompany, shipmentCompany]);
 
-            if (Aresult.length > 0) {
+            if (rows.length > 0) {
                 const didLocal = Aresult[0]["didLocal"];
-                cadete !== -2 ? asignar(didLocal, empresa, cadete, quien, res) : desasignar(didLocal, empresa, cadete, quien, res);
+                return didLocal;
             } else {
-                return sendResponse(res, { estado: false, mensaje: "El paquete externo no existe en la logística." });
+                throw new Error("El paquete externo no existe en la logística.");
             }
-        } catch (err) {
-            console.error("Error en consulta de envios_exteriores:", err);
+        } catch (error) {
+            throw error;
         }
     } else {
+        return shipmentId;
+    }
+}
+async function idFromFlexShipment(idshipment) {
+    try {
+        const query = `SELECT did FROM envios WHERE flex=1 AND superado=0 AND elim=0 AND ml_shipment_id = ?`;
+        const rows = await executeQuery(con, query, [idshipment]);
 
-        cadete !== -2 ? asignar(didenvio, empresa, cadete, quien, res) : desasignar(didenvio, empresa, cadete, quien, res);
+        if (rows.length > 0) {
+            const didenvio = rows[0].did;
+            return didenvio;
+        } else {
+            throw new Error("El paquete flexible no se encontró en la base de datos.");
+        }
+    } catch (error) {
+        throw error;
     }
 }
 
-function handleFlexPackage(idshipment, con, cadete, empresa, res) {
-    const query = `SELECT did FROM envios WHERE flex=1 AND superado=0 AND elim=0 AND ml_shipment_id = ?`;
-    con.query(query, [idshipment], (err, rows) => {
-        if (err) {
-            return sendResponse(res, { estado: false, mensaje: "Error en la consulta de paquete flexible." });
-        }
 
-        const Aresult = Object.values(JSON.parse(JSON.stringify(rows)));
-        con.end();
-
-        if (Aresult.length > 0) {
-            const didenvio = Aresult[0]["did"];
-            cadete !== -2 ? asignar(didenvio, empresa, cadete, quien, res) : desasignar(didenvio, empresa, cadete, quien, res);
-        } else {
-            sendResponse(res, { estado: false, mensaje: "El paquete flexible no se encontró en la base de datos." });
-        }
-    });
-}
-
-function sendResponse(res, response) {
-    res.status(200).json(response);
-}
-
-function query(connection, sql, params) {
-    return new Promise((resolve, reject) => {
-        connection.query(sql, params, (error, results) => {
-            if (error) return reject(error);
-            resolve(results);
-        });
-    });
-}
 async function crearUsuario(empresa, con) {
     const username = `usuario_${empresa}`;
     const password = '78451296';
@@ -140,12 +60,6 @@ async function crearUsuario(empresa, con) {
             });
         });
     });
-}
-
-async function actualizarEmpresas() {
-    const empresasDataJson = await redisClient.get('empresas');
-    let Aempresas = JSON.parse(empresasDataJson);
-    return Aempresas
 }
 
 async function crearTablaAsignaciones(empresa, con) {
@@ -218,10 +132,15 @@ async function guardarDatosEnTabla(empresa, didenvio, chofer, estado, quien, des
     });
 }
 
+async function asignar(dataQr) {
 
+    const isFlex = dataQr.hasOwnProperty("sender_id");
 
-async function asignar(didenvio, empresa, cadete, quien, res) {
-
+    if (!isFlex) {
+        idFromLightdataShipment(dataQr);
+    } else {
+        idFromFlexShipment(dataQr);
+    }
     const Aempresas = await iniciarProceso();
     const AdataDB = Aempresas[empresa];
     let response = "";
@@ -339,7 +258,7 @@ async function asignar(didenvio, empresa, cadete, quien, res) {
                                                         return res.writeHead(500).end(JSON.stringify(response));
                                                     }
 
-                                                    const guardamos = await guardarDatosEnTabla(empresa, did, cadete, estado, quien, 0, conLocal);
+                                                    await guardarDatosEnTabla(empresa, did, cadete, estado, quien, 0, conLocal);
 
                                                     response = { estado: true, mensaje: "Paquete asignado correctamente." };
                                                     con.end();
@@ -366,8 +285,19 @@ async function asignar(didenvio, empresa, cadete, quien, res) {
     });
 }
 
-
 async function desasignar(didenvio, empresa, res) {
+    const dataQRParsed = dataQR
+
+    const isFlex = dataQRParsed.hasOwnProperty("sender_id");
+
+    const didenvio = isFlex ? 0 : dataQRParsed.did;
+
+    if (!isFlex) {
+        idFromLightdataShipment(didenvio, empresa, cadete, quien, con, res, dataQRParsed);
+    } else {
+        idFromFlexShipment(dataQRParsed.id, con, cadete, empresa, res);
+    }
+
     const AdataDB = Aempresas[empresa];
     let response = "";
 
@@ -418,165 +348,4 @@ async function desasignar(didenvio, empresa, res) {
     });
 }
 
-const server = createServer((req, res) => {
-    if (req.method === 'POST') {
-        let body = '';
-
-        req.on('data', chunk => {
-            body += chunk;
-        });
-
-        req.on('end', async () => {
-            const dataEntrada = decode(body);
-            const operador = dataEntrada.operador;
-
-            if (operador === "actualizarEmpresas") {
-            } else if (operador === "getEmpresas") {
-                const buffer = JSON.stringify("pruebas2 =>" + JSON.stringify(Aempresas));
-                res.writeHead(200);
-                res.end(buffer);
-            } else {
-                await handleOperador(dataEntrada, res);
-            }
-        });
-    } else {
-        res.writeHead(404);
-        res.end();
-    }
-});
-
-async function handleOperador(dataEntrada, res) {
-    const { empresa, cadete, quien, dataQR } = dataEntrada;
-
-    if (empresa == 12 && quien == 49) {
-        const response = { estado: false, mensaje: "Comunicarse con la logística." };
-        return sendResponse(res, response);
-    }
-
-    const fechaunix = Date.now();
-    const sqlLog = `INSERT INTO logs (didempresa, quien, cadete, data, fechaunix) VALUES (${escape(empresa)}, ${escape(quien)}, ${escape(cadete)}, ${escape(dataQR)}, ${escape(fechaunix)})`;
-
-    conLocal.query(sqlLog, (err, result) => {
-        if (err) {
-            console.error("Error al insertar en logs:", err);
-        }
-    });
-
-    const dataQRParsed = JSON.parse(dataQR);
-    if (Aempresas[empresa]) {
-        const AdataDB = Aempresas[empresa];
-
-        if (AdataDB.dbname && AdataDB.dbuser && AdataDB.dbpass) {
-            const con = createConnection({
-                host: "bhsmysql1.lightdata.com.ar",
-                user: AdataDB.dbuser,
-                password: AdataDB.dbpass,
-                database: AdataDB.dbname
-            });
-
-            con.connect(err => {
-                if (err) {
-                    const response = { estado: false, mensaje: err.message };
-                    return sendResponse(res, response);
-                }
-            });
-
-            const isFlex = dataQRParsed.hasOwnProperty("sender_id");
-            let didenvio = isFlex ? 0 : dataQRParsed.did;
-
-            if (!isFlex) {
-                handleRegularPackage(didenvio, empresa, cadete, quien, con, res);
-            } else {
-                handleFlexPackage(dataQRParsed.id, con, cadete, empresa, res);
-            }
-        } else {
-            const response = { estado: false, mensaje: "Error al conectar a la DB" };
-            sendResponse(res, response);
-        }
-    } else {
-        const response = { estado: false, mensaje: "No está cargado el ID de la empresa" };
-        sendResponse(res, response);
-    }
-}
-
-function handleRegularPackage(didenvio, empresa, cadete, quien, con, res) {
-    const didempresapaquete = dataQRParsed.empresa;
-
-    if (empresa !== didempresapaquete) {
-        const sql = `SELECT didLocal FROM envios_exteriores WHERE superado=0 AND elim=0 AND didExterno = ${escape(didenvio)} AND didEmpresa = ${escape(didempresapaquete)}`;
-        con.query(sql, (err, rows) => {
-            if (err) {
-                console.error("Error en consulta de envios_exteriores:", err);
-            }
-
-            const Aresult = Object.values(JSON.parse(JSON.stringify(rows)));
-            con.end();
-
-            if (Aresult.length > 0) {
-                const didLocal = Aresult[0]["didLocal"];
-                if (cadete !== -2) {
-                    asignar(didLocal, empresa, cadete, quien, res);
-                } else {
-                    desasignar(didLocal, empresa, cadete, quien, res);
-                }
-            } else {
-                const response = { estado: false, mensaje: "El paquete externo no existe en la logística." };
-                sendResponse(res, response);
-            }
-        });
-    } else {
-        if (cadete !== -2) {
-            asignar(didenvio, empresa, cadete, quien, res);
-        } else {
-            desasignar(didenvio, empresa, cadete, quien, res);
-        }
-    }
-}
-
-function handleFlexPackage(idshipment, con, cadete, empresa, res) {
-    const query = `SELECT did FROM envios WHERE flex=1 AND superado=0 AND elim=0 AND ml_shipment_id = ${escape(idshipment)}`;
-    con.query(query, (err, rows) => {
-        if (err) {
-            const response = { estado: false, mensaje: query };
-            sendResponse(res, response);
-            return;
-        }
-
-        const Aresult = Object.values(JSON.parse(JSON.stringify(rows)));
-        con.end();
-
-        if (Aresult.length > 0) {
-            const didenvio = Aresult[0]["did"];
-            if (cadete !== -2) {
-                asignar(didenvio, empresa, cadete, quien, res);
-            } else {
-                desasignar(didenvio, empresa, cadete, quien, res);
-            }
-        } else {
-        }
-    });
-}
-
-function sendResponse(res, response) {
-    const buffer = JSON.stringify(response);
-    res.writeHead(200);
-    res.end(buffer);
-}
-
-async function iniciarProceso() {
-    try {
-        await redisClient.connect();
-
-        let empresas = await actualizarEmpresas(Aempresas);
-
-        await redisClient.quit();
-        return empresas
-    } catch (error) {
-        console.error("Error en el proceso:", error);
-    }
-}
-
-let Aempresas = iniciarProceso();
-
-
-export default { asignar, desasignar, Aempresas, iniciarProceso, actualizarEmpresas };
+export default { asignar, desasignar };
