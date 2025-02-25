@@ -3,9 +3,6 @@
   "version": "1.0.0",
   "description": "api asignaciones",
   "main": "server-api-asignaciones.js",
-  "scripts": {
-    "dev": "node -r dotenv/config server-api-asignaciones.js dotenv_config_path=.env.dev"
-  },
   "type": "module",
   "author": "lightdatamovil",
   "license": "ISC",
