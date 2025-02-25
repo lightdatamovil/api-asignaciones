@@ -89,9 +89,11 @@ export async function desasignar(company, userId, dataQr, deviceFrom) {
             throw new Error("No se pudo obtener el id del envío.");
         }
 
+        const sq = "SELECT estado FROM `envios_historial` WHERE  didEnvio = ? and superado=0 LIMIT 1";
+        const estado = await executeQuery(dbConnection, sq, [shipmentId]);
         const insertQuery = "INSERT INTO envios_asignaciones (did, operador, didEnvio, estado, quien, desde) VALUES (?, ?, ?, ?, ?, ?)";
 
-        const resultInsertQuery = await executeQuery(dbConnection, insertQuery, ["", 0, shipmentId, 0, userId, deviceFrom]);
+        const resultInsertQuery = await executeQuery(dbConnection, insertQuery, ["", 0, shipmentId, estado[0].estado, userId, deviceFrom]);
 
         // Actualizar asignaciones
         await executeQuery(dbConnection, `UPDATE envios_asignaciones SET superado=1, did=${resultInsertQuery.insertId} WHERE superado=0 AND elim=0 AND didEnvio = ?`, [shipmentId]);

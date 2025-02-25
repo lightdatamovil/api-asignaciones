@@ -53,9 +53,4 @@ asignaciones.post('/desasignar', async (req, res) => {
     }
 });
 
-
 export default asignaciones;
-
-
-
-
