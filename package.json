@@ -2,9 +2,10 @@
   "name": "api-asignaciones",
   "version": "1.0.0",
   "description": "api asignaciones",
-  "main": "server.js",
+  "main": "server-api-asignaciones.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "node -r dotenv/config server-api-asignaciones.js dotenv_config_path=.env.dev",
+    "prod": "node -r dotenv/config server-api-asignaciones.js dotenv_config_path=.env.prod"
   },
   "type": "module",
   "author": "lightdatamovil",
