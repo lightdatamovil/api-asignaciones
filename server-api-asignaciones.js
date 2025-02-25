@@ -1,5 +1,6 @@
 import express, { json, urlencoded } from 'express';
 import asignaciones from './routes/asignaciones.js';
+import asignacionesProcourrier from './routes/asignacionesProcourrier.js';
 import { redisClient } from './db.js';
 
 const app = express();
@@ -11,6 +12,7 @@ app.use(json());
 const PORT = process.env.PORT || 13000;
 
 app.use("/api/asignaciones", asignaciones)
+app.use("/api/asignaciones-procourrier", asignacionesProcourrier)
 
 await redisClient.connect();
 
