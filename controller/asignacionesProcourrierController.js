@@ -31,7 +31,7 @@ export async function verificacionDeAsignacion(company, userId, profile, dataQr,
         const envios = await executeQuery(dbConnection, sql, []);
 
         if (envios.length === 0) {
-            return { estadoRespuesta: false, mensaje: "No se encontró el paquete." };
+            return { estadoRespuesta: false, message: "No se encontró el paquete." };
         }
 
         const envio = envios[0];
@@ -54,23 +54,23 @@ export async function verificacionDeAsignacion(company, userId, profile, dataQr,
 
         if (esElMismoCadete) {
             if (profile === 1 && estadoAsignacion === 1) {
-                return { estadoRespuesta: false, mensaje: "Este paquete ya fue asignado a este cadete" };
+                return { estadoRespuesta: false, message: "Este paquete ya fue asignado a este cadete" };
             }
             if (profile === 3 && estadoAsignacion === 2) {
-                return { estadoRespuesta: false, mensaje: "Este paquete ya fue auto asignado a este cadete" };
+                return { estadoRespuesta: false, message: "Este paquete ya fue auto asignado a este cadete" };
             }
             if (profile === 5 && [3, 4, 5].includes(estadoAsignacion)) {
-                return { estadoRespuesta: false, mensaje: "Este paquete ya fue confirmado" };
+                return { estadoRespuesta: false, message: "Este paquete ya fue confirmado" };
             }
         } else {
             if (profile === 1 && estadoAsignacion === 1) {
-                return { estadoRespuesta: false, mensaje: "Este paquete ya fue asignado a otro cadete" };
+                return { estadoRespuesta: false, message: "Este paquete ya fue asignado a otro cadete" };
             }
             if (profile === 3 && estadoAsignacion === 2) {
-                return { estadoRespuesta: false, mensaje: "Este paquete ya fue auto asignado por otro cadete" };
+                return { estadoRespuesta: false, message: "Este paquete ya fue auto asignado por otro cadete" };
             }
             if (profile === 5 && [1, 3, 4, 5].includes(estadoAsignacion)) {
-                return { estadoRespuesta: false, mensaje: "Este paquete ya fue confirmado o asignado a otro cadete" };
+                return { estadoRespuesta: false, message: "Este paquete ya fue confirmado o asignado a otro cadete" };
             }
         }
 
@@ -82,32 +82,32 @@ export async function verificacionDeAsignacion(company, userId, profile, dataQr,
 
 
         let noCumple = false;
-        let mensaje = "No se puede asignar el paquete.";
+        let message = "No se puede asignar el paquete.";
 
         if (ponerEnEstado1) {
             await executeQuery(dbConnection, "UPDATE envios SET estadoAsignacion = 1 WHERE superado = 0 AND elim = 0 AND did = ?", [shipmentId]);
-            mensaje = "Asignado correctamente.";
+            message = "Asignado correctamente.";
         } else if (ponerEnEstado2) {
             await executeQuery(dbConnection, "UPDATE envios SET estadoAsignacion = 2 WHERE superado = 0 AND elim = 0 AND did = ?", [shipmentId]);
-            mensaje = "Autoasignado correctamente.";
+            message = "Autoasignado correctamente.";
         } else if (ponerEnEstado3) {
             await executeQuery(dbConnection, "UPDATE envios SET estadoAsignacion = 3 WHERE superado = 0 AND elim = 0 AND did = ?", [shipmentId]);
-            mensaje = "Confirmado correctamente.";
+            message = "Confirmado correctamente.";
         } else if (ponerEnEstado4) {
             await executeQuery(dbConnection, "UPDATE envios SET estadoAsignacion = 4 WHERE superado = 0 AND elim = 0 AND did = ?", [shipmentId]);
-            mensaje = "Confirmado correctamente.";
+            message = "Confirmado correctamente.";
         } else if (ponerEnEstado5) {
             await executeQuery(dbConnection, "UPDATE envios SET estadoAsignacion = 5 WHERE superado = 0 AND elim = 0 AND did = ?", [shipmentId]);
-            mensaje = "Asignado correctamente.";
+            message = "Asignado correctamente.";
         } else {
             noCumple = true;
         }
 
         if (noCumple) {
-            return { estadoRespuesta: false, mensaje };
+            return { estadoRespuesta: false, message };
         } else {
             await asignar(dbConnection, company, userId, driverId, deviceFrom, shipmentId);
-            return { estadoRespuesta: true, mensaje };
+            return { estadoRespuesta: true, message };
         }
     } catch (error) {
         console.error("Error al verificar la asignación:", error);
@@ -121,7 +121,7 @@ async function asignar(dbConnection, company, userId, driverId, deviceFrom, ship
         const asignadoRows = await executeQuery(dbConnection, sqlAsignado, [shipmentId, driverId]);
 
         if (asignadoRows.length > 0) {
-            return { success: false, mensaje: "El paquete ya se encuentra asignado a este chofer." };
+            return { success: false, message: "El paquete ya se encuentra asignado a este chofer." };
         }
 
         const estadoQuery = `SELECT estado FROM envios_historial WHERE superado=0 AND elim=0 AND didEnvio = ?`;
@@ -157,7 +157,7 @@ async function asignar(dbConnection, company, userId, driverId, deviceFrom, ship
 
         await insertAsignacionesDB(company.did, did, driverId, estado, userId, deviceFrom);
 
-        return { success: true, mensaje: "Asignación realizada correctamente" };
+        return { success: true, message: "Asignación realizada correctamente" };
     } catch (error) {
         console.error("Error al asignar paquete:", error);
         throw error;
@@ -185,7 +185,7 @@ export async function desasignar(company, userId, dataQr, deviceFrom) {
         const operador = result.length > 0 ? result[0].operador : 0;
 
         if (operador == 0) {
-            return { success: false, mensaje: "El paquete ya está desasignado" };
+            return { success: false, message: "El paquete ya está desasignado" };
         }
 
         if (!shipmentId) {
@@ -210,7 +210,7 @@ export async function desasignar(company, userId, dataQr, deviceFrom) {
         // Desasignar chofer
         await executeQuery(dbConnection, `UPDATE envios SET choferAsignado = 0 WHERE superado=0 AND elim=0 AND did = ?`, [shipmentId]);
 
-        return { success: true, mensaje: "Desasignación realizada correctamente" };
+        return { success: true, message: "Desasignación realizada correctamente" };
     } catch (error) {
         console.error("Error al desasignar paquete:", error);
         throw error;

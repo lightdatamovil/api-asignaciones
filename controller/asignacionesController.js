@@ -19,7 +19,7 @@ export async function asignar(company, userId, dataQr, driverId, deviceFrom) {
         const asignadoRows = await executeQuery(dbConnection, sqlAsignado, [shipmentId, driverId]);
 
         if (asignadoRows.length > 0) {
-            return { success: false, mensaje: "El paquete ya se encuentra asignado a este chofer." };
+            return { success: false, message: "El paquete ya se encuentra asignado a este chofer." };
         }
 
         const estadoQuery = `SELECT estado FROM envios_historial WHERE superado=0 AND elim=0 AND didEnvio = ?`;
@@ -56,7 +56,7 @@ export async function asignar(company, userId, dataQr, driverId, deviceFrom) {
 
         await insertAsignacionesDB(company.did, did, driverId, estado, userId, deviceFrom);
 
-        return { success: true, mensaje: "Asignación realizada correctamente" };
+        return { success: true, message: "Asignación realizada correctamente" };
     } catch (error) {
         console.error("Error al asignar paquete:", error);
         throw error;
@@ -84,7 +84,7 @@ export async function desasignar(company, userId, dataQr, deviceFrom) {
         const operador = result.length > 0 ? result[0].operador : 0;
 
         if (operador == 0) {
-            return { success: false, mensaje: "El paquete ya está desasignado" };
+            return { success: false, message: "El paquete ya está desasignado" };
         }
 
         if (!shipmentId) {
@@ -106,7 +106,7 @@ export async function desasignar(company, userId, dataQr, deviceFrom) {
         // Desasignar chofer
         await executeQuery(dbConnection, `UPDATE envios SET choferAsignado = 0 WHERE superado=0 AND elim=0 AND did = ?`, [shipmentId]);
 
-        return { success: true, mensaje: "Desasignación realizada correctamente" };
+        return { success: true, message: "Desasignación realizada correctamente" };
     } catch (error) {
         console.error("Error al desasignar paquete:", error);
         throw error;
