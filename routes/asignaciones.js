@@ -30,7 +30,7 @@ asignaciones.post('/asignar', async (req, res) => {
 });
 
 asignaciones.post('/desasignar', async (req, res) => {
-    const errorMessage = verifyParamaters(req.body, ['dataQr', 'driverId', 'deviceFrom']);
+    const errorMessage = verifyParamaters(req.body, ['dataQr', 'deviceFrom']);
 
     if (errorMessage) {
         return res.status(400).json({ message: errorMessage });
