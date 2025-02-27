@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { desasignar, verificacionDeAsignacion } from '../controller/asignacionesProcourrierController.js';
-import { verifyParamaters } from '../src/funciones/verifyParameters.js';
+import { desasignar, verificacionDeAsignacion } from '../controller/assignmentsProcourrierController.js';
+import { verifyParamaters } from '../src/functions/verifyParameters.js';
 import { getCompanyById } from '../db.js';
 
 const asignacionesProcourrier = Router();

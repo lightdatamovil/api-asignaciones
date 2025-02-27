@@ -1,6 +1,6 @@
 import express, { json, urlencoded } from 'express';
-import asignaciones from './routes/asignaciones.js';
-import asignacionesProcourrier from './routes/asignacionesProcourrier.js';
+import asignaciones from './routes/assignments.js';
+import asignacionesProcourrier from './routes/assignmentsProcourrier.js';
 import { redisClient } from './db.js';
 
 const app = express();

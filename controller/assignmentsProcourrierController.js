@@ -1,6 +1,6 @@
 import { executeQuery, getProdDbConfig } from '../db.js';
-import { idFromFlexShipment, idFromLightdataShipment } from '../src/funciones/identify_shipment.js';
-import { crearTablaAsignaciones, crearUsuario, insertAsignacionesDB } from '../src/funciones/db_local.js';
+import { idFromFlexShipment, idFromLightdataShipment } from '../src/functions/identifyShipment.js';
+import { createAssignmentsTable, createUser, insertAsignacionesDB } from '../src/functions/db_local.js';
 import mysql from 'mysql';
 
 export async function verificacionDeAsignacion(company, userId, profile, dataQr, driverId, deviceFrom) {
@@ -134,8 +134,8 @@ async function asignar(dbConnection, company, userId, driverId, deviceFrom, ship
 
         const estado = estadoRows[0].estado;
 
-        await crearTablaAsignaciones(company.did, dbConnection);
-        await crearUsuario(company.did, dbConnection);
+        await createAssignmentsTable(company.did, dbConnection);
+        await createUser(company.did, dbConnection);
 
         const insertSql = `INSERT INTO envios_asignaciones (did, operador, didEnvio, estado, quien, desde) VALUES (?, ?, ?, ?, ?, ?)`;
 

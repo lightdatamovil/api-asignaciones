@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { asignar, desasignar } from '../controller/asignacionesController.js';
-import { verifyParamaters } from '../src/funciones/verifyParameters.js';
+import { asignar, desasignar } from '../controller/assignmentsController.js';
+import { verifyParamaters } from '../src/functions/verifyParameters.js';
 import { getCompanyById } from '../db.js';
 
 const asignaciones = Router();

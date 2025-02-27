@@ -1,7 +1,7 @@
 import mysql from 'mysql';
 import { getDbConfig, executeQuery } from '../../db.js';
 
-export async function crearTablaAsignaciones(companyId) {
+export async function createAssignmentsTable(companyId) {
     const dbConfig = getDbConfig();
     const dbConnection = mysql.createConnection(dbConfig);
     dbConnection.connect();
@@ -34,7 +34,7 @@ export async function crearTablaAsignaciones(companyId) {
     }
 }
 
-export async function crearUsuario(companyId) {
+export async function createUser(companyId) {
     const dbConfig = getDbConfig();
     const dbConnection = mysql.createConnection(dbConfig);
     dbConnection.connect();
