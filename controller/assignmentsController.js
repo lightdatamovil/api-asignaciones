@@ -1,4 +1,4 @@
-import { executeQuery, getProdDbConfig } from '../db.js';
+import { executeQuery, getProdDbConfig, updateRedis } from '../db.js';
 import { idFromFlexShipment, idFromLightdataShipment } from '../src/functions/identifyShipment.js';
 import { createAssignmentsTable, createUser, insertAsignacionesDB } from '../src/functions/db_local.js';
 import mysql from 'mysql';
@@ -56,6 +56,8 @@ export async function asignar(company, userId, dataQr, driverId, deviceFrom) {
 
         await insertAsignacionesDB(company.did, did, driverId, estado, userId, deviceFrom);
 
+        await updateRedis(company.did, shipmentId, driverId);
+
         return { success: true, message: "Asignación realizada correctamente" };
     } catch (error) {
         console.error("Error al asignar paquete:", error);
@@ -106,6 +108,7 @@ export async function desasignar(company, userId, dataQr, deviceFrom) {
         // Desasignar chofer
         await executeQuery(dbConnection, `UPDATE envios SET choferAsignado = 0 WHERE superado=0 AND elim=0 AND did = ?`, [shipmentId]);
 
+        await updateRedis(company.did, shipmentId, 0);
         return { success: true, message: "Desasignación realizada correctamente" };
     } catch (error) {
         console.error("Error al desasignar paquete:", error);

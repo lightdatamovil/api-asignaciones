@@ -1,4 +1,4 @@
-import { executeQuery, getProdDbConfig } from '../db.js';
+import { executeQuery, getProdDbConfig, updateRedis } from '../db.js';
 import { idFromFlexShipment, idFromLightdataShipment } from '../src/functions/identifyShipment.js';
 import { createAssignmentsTable, createUser, insertAsignacionesDB } from '../src/functions/db_local.js';
 import mysql from 'mysql';
@@ -107,6 +107,9 @@ export async function verificacionDeAsignacion(company, userId, profile, dataQr,
             return { estadoRespuesta: false, message };
         } else {
             await asignar(dbConnection, company, userId, driverId, deviceFrom, shipmentId);
+
+            await updateRedis(company.did, shipmentId, driverId);
+
             return { estadoRespuesta: true, message };
         }
     } catch (error) {
@@ -209,6 +212,8 @@ export async function desasignar(company, userId, dataQr, deviceFrom) {
 
         // Desasignar chofer
         await executeQuery(dbConnection, `UPDATE envios SET choferAsignado = 0 WHERE superado=0 AND elim=0 AND did = ?`, [shipmentId]);
+
+        await updateRedis(company.did, shipmentId, 0);
 
         return { success: true, message: "Desasignación realizada correctamente" };
     } catch (error) {

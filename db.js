@@ -25,9 +25,54 @@ redisClient.on('error', (err) => {
     console.error('Error al conectar con Redis:', err);
 });
 
+export async function updateRedis(empresaId, envioId, choferId) {
+    try {
+        console.log("empresaId:", empresaId);
+        console.log("envioId:", envioId);
+        console.log("choferId:", choferId);
+
+        let DWRTE = await redisClient.get('DWRTE');
+        const empresaKey = `e.${empresaId}`;
+        const envioKey = `en.${envioId}`;
+
+        console.log("DWRTE antes de parsear:", DWRTE);
+
+        // Si no existe en Redis, inicializamos con un objeto vacío
+        if (!DWRTE) {
+            DWRTE = {};
+        } else {
+            DWRTE = JSON.parse(DWRTE); // Convertimos el string en objeto
+        }
+
+        // Si la empresa no existe, la creamos
+        if (!DWRTE[empresaKey]) {
+            DWRTE[empresaKey] = {};
+        }
+
+        // Solo agrega si el envío no existe
+        if (!DWRTE[empresaKey][envioKey]) {
+            DWRTE[empresaKey][envioKey] = {
+                choferId: choferId
+            };
+        }
+
+        // Guardamos la versión actualizada en Redis
+        await redisClient.set('DWRTE', JSON.stringify(DWRTE));
+
+        console.log("DWRTE actualizado:", DWRTE);
+    } catch (error) {
+        console.error("Error al actualizar Redis:", error);
+        throw error;
+    }
+}
+
 let companiesList = [];
 
 export function getDbConfig() {
+    console.log("databaseHost", databaseHost);
+    console.log("databaseUser", databaseUser);
+    console.log("databasePassword", databasePassword);
+    console.log("databaseName", databaseName);
     return {
         host: databaseHost,
         user: databaseUser,
