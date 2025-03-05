@@ -33,6 +33,7 @@ export async function asignar(company, userId, dataQr, driverId, deviceFrom) {
         const estado = estadoRows[0].estado;
 
         await createAssignmentsTable(company.did, dbConnection);
+
         await createUser(company.did, dbConnection);
 
         const insertSql = `INSERT INTO envios_asignaciones (did, operador, didEnvio, estado, quien, desde) VALUES (?, ?, ?, ?, ?, ?)`;
