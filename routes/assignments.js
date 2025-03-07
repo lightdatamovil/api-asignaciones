@@ -6,6 +6,7 @@ import { getCompanyById } from '../db.js';
 const asignaciones = Router();
 
 asignaciones.post('/asignar', async (req, res) => {
+    console.log(req.body);
     const errorMessage = verifyParamaters(req.body, ['dataQr', 'driverId', 'deviceFrom']);
 
     if (errorMessage) {
