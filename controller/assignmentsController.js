@@ -10,6 +10,7 @@ export async function asignar(company, userId, dataQr, driverId, deviceFrom) {
 
     try {
         const isFlex = dataQr.hasOwnProperty("sender_id");
+        console.log('dataQrAntes', dataQr);
 
         const shipmentId = isFlex
             ? await idFromFlexShipment(dataQr.id, dbConnection)
