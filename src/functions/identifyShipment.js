@@ -21,6 +21,8 @@ export async function idFromLightdataShipment(company, dataQr, dbConnection) {
             throw error;
         }
     } else {
+        console.log('1,' + shipmentId);
+
         return shipmentId;
     }
 }
