@@ -15,7 +15,7 @@ export async function asignar(company, userId, dataQr, driverId, deviceFrom) {
             ? await idFromFlexShipment(dataQr.id, dbConnection)
             : await idFromLightdataShipment(company, dataQr, dbConnection);
 
-        const sqlAsignado = `SELECT id, estado FROM envios_asignaciones WHERE superado=0 AND elim=0 AND didEnvio = ? AND operador = ?`;
+        const sqlAsignado = `SELECT id, estado FROM envios_asignaciones WHERE superado=0 AND elim=0 AND did = ? AND operador = ?`;
         const asignadoRows = await executeQuery(dbConnection, sqlAsignado, [shipmentId, driverId]);
 
         if (asignadoRows.length > 0) {
