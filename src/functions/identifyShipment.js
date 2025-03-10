@@ -4,6 +4,8 @@ export async function idFromLightdataShipment(company, dataQr, dbConnection) {
     const companyIdFromShipment = dataQr.empresa;
 
     const shipmentId = dataQr.did;
+    console.log('company.did', company.did);
+    console.log('companyIdFromShipment', companyIdFromShipment);
 
     if (company.did != companyIdFromShipment) {
         try {
