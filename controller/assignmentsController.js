@@ -17,10 +17,9 @@ export async function asignar(company, userId, dataQr, driverId, deviceFrom) {
 
         const sqlAsignado = `SELECT id, estado FROM envios_asignaciones WHERE superado=0 AND elim=0 AND didEnvio = ? AND operador = ?`;
         const asignadoRows = await executeQuery(dbConnection, sqlAsignado, [shipmentId, driverId]);
-        console.log('asignadoRows', asignadoRows);
 
         if (asignadoRows.length > 0) {
-            return { success: false, message: "El paquete ya se encuentra asignado a este chofer." };
+            return { feature: "asignacion", estadoRespuesta: false, mensaje: "El paquete ya se encuentra asignado a este chofer." };
         }
 
         const estadoQuery = `SELECT estado FROM envios_historial WHERE superado=0 AND elim=0 AND didEnvio = ?`;
@@ -60,7 +59,7 @@ export async function asignar(company, userId, dataQr, driverId, deviceFrom) {
 
         await updateRedis(company.did, shipmentId, driverId);
 
-        return { success: true, message: "Asignación realizada correctamente" };
+        return { feature: "asignacion", estadoRespuesta: true, mensaje: "Asignación realizada correctamente" };
     } catch (error) {
         console.error("Error al asignar paquete:", error);
         throw error;
