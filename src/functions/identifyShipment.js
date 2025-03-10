@@ -11,6 +11,8 @@ export async function idFromLightdataShipment(company, dataQr, dbConnection) {
         try {
             const sql = `SELECT didLocal FROM envios_exteriores WHERE superado=0 AND elim=0 AND didExterno = ? AND didEmpresa = ?`;
             const rows = await executeQuery(dbConnection, sql, [shipmentId, companyIdFromShipment]);
+            console.log('sql', sql);
+            console.log('values', [shipmentId, companyIdFromShipment]);
 
             if (rows.length > 0) {
                 shipmentId = rows[0]["didLocal"];
