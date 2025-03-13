@@ -1,6 +1,6 @@
-import { executeQuery, getProdDbConfig, updateRedis } from '../db.js';
+import { executeQuery, getProdDbConfig, updateRedis } from '../../db.js';
 import { idFromFlexShipment, idFromLightdataShipment } from '../src/functions/identifyShipment.js';
-import { createAssignmentsTable, createUser, insertAsignacionesDB } from '../src/functions/db_local.js';
+import { createAssignmentsTable, createUser, insertAsignacionesDB } from '../../src/functions/db_local.js';
 import mysql from 'mysql';
 
 export async function verificacionDeAsignacion(company, userId, profile, dataQr, driverId, deviceFrom) {
@@ -216,6 +216,9 @@ export async function desasignar(company, userId, dataQr, deviceFrom) {
         await executeQuery(dbConnection, `UPDATE envios SET choferAsignado = 0 WHERE superado=0 AND elim=0 AND did = ?`, [shipmentId]);
 
         await updateRedis(company.did, shipmentId, 0);
+
+        await insertAsignacionesDB(company.did, did, driverId, estado, userId, deviceFrom);
+        logCyan("Inserto en la base de datos individual de asignaciones");
 
         return { success: true, message: "Desasignación realizada correctamente" };
     } catch (error) {
