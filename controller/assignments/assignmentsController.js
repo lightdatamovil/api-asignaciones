@@ -28,7 +28,7 @@ export async function asignar(company, userId, dataQr, driverId, deviceFrom) {
         const asignadoRows = await executeQuery(dbConnection, sqlAsignado, [shipmentId, driverId]);
 
         if (asignadoRows.length > 0) {
-            return { feature: "asignacion", estadoRespuesta: false, mensaje: "El paquete ya se encuentra asignado a este chofer." };
+            return { feature: "asignacion", success: false, message: "El paquete ya se encuentra asignado a este chofer." };
         }
         logCyan("El paquete todavia no está asignado");
 
@@ -74,7 +74,7 @@ export async function asignar(company, userId, dataQr, driverId, deviceFrom) {
         await updateRedis(company.did, shipmentId, driverId);
         logCyan("Actualizo Redis con la asignación");
 
-        return { feature: "asignacion", estadoRespuesta: true, mensaje: "Asignación realizada correctamente" };
+        return { feature: "asignacion", success: true, message: "Asignación realizada correctamente" };
     } catch (error) {
 
         logRed(`Error al asignar paquete:  ${error.stack}`)
@@ -107,7 +107,7 @@ export async function desasignar(company, userId, dataQr, deviceFrom) {
         const operador = result.length > 0 ? result[0].operador : 0;
 
         if (operador == 0) {
-            return { feature: "asignacion", estadoRespuesta: false, mensaje: "El paquete ya está desasignado" };
+            return { feature: "asignacion", success: false, message: "El paquete ya está desasignado" };
         }
         logCyan("El paquete está asignado");
 
@@ -136,7 +136,7 @@ export async function desasignar(company, userId, dataQr, deviceFrom) {
         await insertAsignacionesDB(company.did, did, driverId, result[0].estado, userId, deviceFrom);
         logCyan("Inserto en la base de datos individual de asignaciones");
 
-        return { feature: "asignacion", estadoRespuesta: true, mensaje: "Desasignación realizada correctamente" };
+        return { feature: "asignacion", success: true, message: "Desasignación realizada correctamente" };
     } catch (error) {
         logRed(`Error al desasignar paquete:  ${error.stack}`)
         throw error;
