@@ -1,11 +1,11 @@
 import { executeQuery, getProdDbConfig, updateRedis } from '../../db.js';
-import mysql2 from 'mysql2';
 import { logCyan, logRed, logYellow } from '../../src/functions/logsCustom.js';
 import { crearTablaAsignaciones } from '../functions/crearTablaAsignaciones.js';
 import { crearUsuario } from '../functions/crearUsuario.js';
 import { insertAsignacionesDB } from '../functions/insertAsignacionesDB.js';
 import { idFromFlexShipment } from '../functions/idFromFlexShipment.js';
 import { idFromNoFlexShipment } from '../functions/idFromNoFlexShipment.js';
+import mysql from 'mysql';
 
 export async function asignar(company, userId, dataQr, driverId, deviceFrom) {
     const dbConfig = getProdDbConfig(company);
@@ -86,7 +86,7 @@ export async function asignar(company, userId, dataQr, driverId, deviceFrom) {
 
 export async function desasignar(company, userId, dataQr, deviceFrom) {
     const dbConfig = getProdDbConfig(company);
-    const dbConnection = mysql2.createConnection(dbConfig);
+    const dbConnection = mysql.createConnection(dbConfig);
     dbConnection.connect();
 
     try {
