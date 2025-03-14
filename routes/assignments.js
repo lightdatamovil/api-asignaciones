@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { asignar, desasignar } from '../controller/assignments/assignmentsController.js';
-import { verifyParamaters } from '../src/functions/verifyParameters.js';
+import { verifyParameters } from '../src/functions/verifyParameters.js';
 import { getCompanyById } from '../db.js';
 
 const asignaciones = Router();
 
 asignaciones.post('/asignar', async (req, res) => {
-    const errorMessage = verifyParamaters(req.body, ['dataQr', 'driverId', 'deviceFrom']);
+    const errorMessage = verifyParameters(req.body, ['dataQr', 'driverId', 'deviceFrom']);
 
     if (errorMessage) {
         return res.status(400).json({ message: errorMessage });
@@ -30,7 +30,7 @@ asignaciones.post('/asignar', async (req, res) => {
 });
 
 asignaciones.post('/desasignar', async (req, res) => {
-    const errorMessage = verifyParamaters(req.body, ['dataQr', 'deviceFrom']);
+    const errorMessage = verifyParameters(req.body, ['dataQr', 'deviceFrom']);
 
     if (errorMessage) {
         return res.status(400).json({ message: errorMessage });

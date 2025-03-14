@@ -6,7 +6,7 @@ import { getCompanyById } from '../db.js';
 const asignacionesProcourrier = Router();
 
 asignacionesProcourrier.post('/asignar', async (req, res) => {
-    const errorMessage = verifyParamaters(req.body, ['dataQr', 'driverId', 'deviceFrom']);
+    const errorMessage = verifyParameters(req.body, ['dataQr', 'driverId', 'deviceFrom']);
 
     if (errorMessage) {
         return res.status(400).json({ message: errorMessage });
@@ -30,7 +30,7 @@ asignacionesProcourrier.post('/asignar', async (req, res) => {
 });
 
 asignacionesProcourrier.post('/desasignar', async (req, res) => {
-    const errorMessage = verifyParamaters(req.body, ['dataQr', 'driverId', 'deviceFrom']);
+    const errorMessage = verifyParameters(req.body, ['dataQr', 'driverId', 'deviceFrom']);
 
     if (errorMessage) {
         return res.status(400).json({ message: errorMessage });
