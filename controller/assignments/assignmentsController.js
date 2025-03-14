@@ -1,4 +1,4 @@
-import { executeQuery, getProdDbConfig, updateRedis } from '../db.js';
+import { executeQuery, getProdDbConfig, updateRedis } from '../../db.js';
 import mysql2 from 'mysql2';
 import { logCyan, logRed, logYellow } from '../src/funciones/logsCustom.js';
 import { crearTablaAsignaciones } from '../controller/functions/crearTablaAsignaciones.js';
