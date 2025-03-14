@@ -21,7 +21,7 @@ asignaciones.post('/asignar', async (req, res) => {
     try {
         const company = await getCompanyById(companyId);
 
-        const result = await asignar(company, userId, JSON.parse(dataQr), driverId, deviceFrom);
+        const result = await asignar(company, userId, dataQr, driverId, deviceFrom);
 
         res.status(200).json(result);
     } catch (error) {
