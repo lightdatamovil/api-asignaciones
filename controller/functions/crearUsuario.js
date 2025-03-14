@@ -1,8 +1,9 @@
 import { executeQuery, getDbConfig } from '../../db.js';
 import { logRed } from '../../src/functions/logsCustom.js';
+import mysql from 'mysql';
 export async function crearUsuario(companyId) {
     const dbConfig = getDbConfig();
-    const dbConnection = mysql2.createConnection(dbConfig);
+    const dbConnection = mysql.createConnection(dbConfig);
     dbConnection.connect();
 
     try {
