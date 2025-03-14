@@ -1,11 +1,11 @@
-import { executeQuery, getProdDbConfig, updateRedis } from '../../db.js';
-import mysql from 'mysql';
-import { logCyan, logRed, logYellow } from '../../src/functions/logsCustom.js';
-import { crearTablaAsignaciones } from '../functions/crearTablaAsignaciones.js';
-import { crearUsuario } from '../functions/crearUsuario.js';
-import { insertAsignacionesDB } from '../functions/insertAsignacionesDB.js';
-import { idFromFlexShipment } from '../functions/idFromFlexShipment.js';
-import { idFromNoFlexShipment } from '../functions/idFromNoFlexShipment.js';
+import { executeQuery, getProdDbConfig, updateRedis } from '../db.js';
+import mysql2 from 'mysql2';
+import { logCyan, logRed, logYellow } from '../src/funciones/logsCustom.js';
+import { crearTablaAsignaciones } from '../controller/functions/crearTablaAsignaciones.js';
+import { crearUsuario } from '../controller/functions/crearUsuario.js';
+import { insertAsignacionesDB } from '../controller/functions/insertAsignacionesDB.js';
+import { idFromFlexShipment } from '../controller/functions/idFromFlexShipment.js';
+import { idFromNoFlexShipment } from '../controller/functions/idFromNoFlexShipment.js';
 
 export async function asignar(company, userId, dataQr, driverId, deviceFrom) {
     const dbConfig = getProdDbConfig(company);
@@ -77,7 +77,7 @@ export async function asignar(company, userId, dataQr, driverId, deviceFrom) {
         return { feature: "asignacion", success: true, message: "Asignación realizada correctamente" };
     } catch (error) {
 
-        logRed(`Error al asignar paquete:  ${error.stack}`)
+        logRed(`Error al asignar paquete:  ${error.message}`)
         throw error;
     } finally {
         dbConnection.end();
@@ -86,7 +86,7 @@ export async function asignar(company, userId, dataQr, driverId, deviceFrom) {
 
 export async function desasignar(company, userId, dataQr, deviceFrom) {
     const dbConfig = getProdDbConfig(company);
-    const dbConnection = mysql.createConnection(dbConfig);
+    const dbConnection = mysql2.createConnection(dbConfig);
     dbConnection.connect();
 
     try {
@@ -107,7 +107,7 @@ export async function desasignar(company, userId, dataQr, deviceFrom) {
         const operador = result.length > 0 ? result[0].operador : 0;
 
         if (operador == 0) {
-            return { feature: "asignacion", success: false, message: "El paquete ya está desasignado" };
+            return { feature: "asignacion", estadoRespuesta: false, mensaje: "El paquete ya está desasignado" };
         }
         logCyan("El paquete está asignado");
 
@@ -116,7 +116,7 @@ export async function desasignar(company, userId, dataQr, deviceFrom) {
         }
 
         const insertQuery = "INSERT INTO envios_asignaciones (did, operador, didEnvio, estado, quien, desde) VALUES (?, ?, ?, ?, ?, ?)";
-        const resultInsertQuery = await executeQuery(dbConnection, insertQuery, ["", 0, shipmentId, 0, userId, deviceFrom]);
+        const resultInsertQuery = await executeQuery(dbConnection, insertQuery, ["", 0, shipmentId, result[0].estado, userId, deviceFrom]);
         logCyan("Inserto en la tabla de asignaciones con el operador 0");
 
         // Actualizar asignaciones
@@ -130,11 +130,11 @@ export async function desasignar(company, userId, dataQr, deviceFrom) {
 
         logCyan("Updateo las tablas");
 
+        await insertAsignacionesDB(company.did, shipmentId, 0, result[0].estado, userId, deviceFrom);
+        logCyan("Inserto en la base de datos individual de asignaciones");
+
         await updateRedis(company.did, shipmentId, 0);
         logCyan("Updateo redis con la desasignación");
-
-        await insertAsignacionesDB(company.did, did, driverId, result[0].estado, userId, deviceFrom);
-        logCyan("Inserto en la base de datos individual de asignaciones");
 
         return { feature: "asignacion", success: true, message: "Desasignación realizada correctamente" };
     } catch (error) {
