@@ -107,7 +107,7 @@ export async function desasignar(company, userId, dataQr, deviceFrom) {
         const operador = result.length > 0 ? result[0].operador : 0;
 
         if (operador == 0) {
-            return { feature: "asignacion", estadoRespuesta: false, mensaje: "El paquete ya está desasignado" };
+            return { feature: "asignacion", success: false, message: "El paquete ya está desasignado" };
         }
         logCyan("El paquete está asignado");
 
