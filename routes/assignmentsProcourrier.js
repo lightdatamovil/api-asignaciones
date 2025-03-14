@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { desasignar, verificacionDeAsignacion } from '../controller/assignmentsProcourrierController.js';
+import { desasignar, verificacionDeAsignacion } from '../controller/assignmentsProCourrier/assignmentsProcourrierController.js';
 import { verifyParamaters } from '../src/functions/verifyParameters.js';
 import { getCompanyById } from '../db.js';
 

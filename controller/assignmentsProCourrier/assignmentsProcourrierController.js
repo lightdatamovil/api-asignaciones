@@ -1,7 +1,8 @@
 import { executeQuery, getProdDbConfig, updateRedis } from '../../db.js';
-import { idFromFlexShipment, idFromLightdataShipment } from '../src/functions/identifyShipment.js';
 import { createAssignmentsTable, createUser, insertAsignacionesDB } from '../../src/functions/db_local.js';
 import mysql from 'mysql';
+import { idFromFlexShipment } from '../functions/idFromFlexShipment.js';
+import { idFromNoFlexShipment } from '../functions/idFromNoFlexShipment.js';
 
 export async function verificacionDeAsignacion(company, userId, profile, dataQr, driverId, deviceFrom) {
     const dbConfig = getProdDbConfig(company);
@@ -13,7 +14,7 @@ export async function verificacionDeAsignacion(company, userId, profile, dataQr,
 
         const shipmentId = isFlex
             ? await idFromFlexShipment(dataQr.id, dbConnection)
-            : await idFromLightdataShipment(company, dataQr, dbConnection);
+            : await idFromNoFlexShipment(company, dataQr, dbConnection);
         if (isFlex) {
             logCyan("Es Flex");
         } else {
