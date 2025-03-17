@@ -77,7 +77,7 @@ export async function asignar(company, userId, dataQr, driverId, deviceFrom) {
         return { feature: "asignacion", success: true, message: "Asignación realizada correctamente" };
     } catch (error) {
 
-        logRed(`Error al asignar paquete:  ${error.message}`)
+        logRed(`Error al asignar paquete:  ${error.stack}`)
         throw error;
     } finally {
         dbConnection.end();
