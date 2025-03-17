@@ -1,3 +1,6 @@
+
+
+import { logRed } from '../../src/functions/logsCustom.js';
 export async function idFromNoFlexShipment(company, dataQr, dbConnection) {
     const companyIdFromShipment = dataQr.empresa;
 
