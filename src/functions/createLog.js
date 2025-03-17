@@ -6,7 +6,7 @@ export async function crearLog(idEmpresa, operador, endpoint, result, quien, idD
 
         const values = [idEmpresa, quien, operador, JSON.stringify(result), fechaunix];
 
-        await conLocal.executeQuery(sqlLog, values);
+        await executeQuery,(conLocal,sqlLog, values);
     } catch (error) {
         console.error("Error al crear log:", error);
         throw error;
