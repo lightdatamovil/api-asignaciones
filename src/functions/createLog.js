@@ -1,3 +1,4 @@
+import { executeQuery } from '../../db.js';
 export async function crearLog(idEmpresa, operador, endpoint, result, quien, idDispositivo, modelo, marca, versionAndroid, versionApp, conLocal) {
     try {
         const fechaunix = Date.now();
@@ -5,7 +6,7 @@ export async function crearLog(idEmpresa, operador, endpoint, result, quien, idD
 
         const values = [idEmpresa, quien, operador, JSON.stringify(result), fechaunix];
 
-        await conLocal.execute(sqlLog, values);
+        await conLocal.executeQuery(sqlLog, values);
     } catch (error) {
         console.error("Error al crear log:", error);
         throw error;
