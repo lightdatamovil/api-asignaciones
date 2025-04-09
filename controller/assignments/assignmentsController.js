@@ -1,4 +1,4 @@
-import { executeQuery, getProdDbConfig, updateRedis } from '../../db.js';
+import { executeQuery, getDbConfig, getProdDbConfig, updateRedis } from '../../db.js';
 import { logCyan, logRed, logYellow } from '../../src/functions/logsCustom.js';
 import { crearTablaAsignaciones } from '../functions/crearTablaAsignaciones.js';
 import { crearUsuario } from '../functions/crearUsuario.js';
@@ -7,12 +7,17 @@ import { idFromFlexShipment } from '../functions/idFromFlexShipment.js';
 import { idFromNoFlexShipment } from '../functions/idFromNoFlexShipment.js';
 import mysql from 'mysql';
 
-export async function asignar(company, userId, dataQr, driverId, deviceFrom) {
+export async function asignar(company, userId, body, driverId, deviceFrom, startTime) {
     const dbConfig = getProdDbConfig(company);
     const dbConnection = mysql.createConnection(dbConfig);
     dbConnection.connect();
 
+    const dbConfigLocal = getDbConfig();
+    const dbConnectionLocal = mysql.createConnection(dbConfigLocal);
+    dbConnectionLocal.connect();
+
     try {
+        const dataQr = body.dataQr;
         const isFlex = dataQr.hasOwnProperty("sender_id");
         if (isFlex) {
             logCyan("Es Flex");
@@ -74,9 +79,16 @@ export async function asignar(company, userId, dataQr, driverId, deviceFrom) {
         await updateRedis(company.did, shipmentId, driverId);
         logCyan("Actualizo Redis con la asignación");
 
-        return { feature: "asignacion", success: true, message: "Asignación realizada correctamente" };
-    } catch (error) {
+        const resultado = { feature: "asignacion", success: true, message: "Asignación realizada correctamente" };
 
+        const sendDuration = performance.now() - startTime;
+
+        crearLog(dbConnectionLocal, company.did, body.userId, body.profile, body, sendDuration.toFixed(2), JSON.stringify(resultado), "asignar", "api", true);
+
+        return resultado;
+    } catch (error) {
+        const sendDuration = performance.now() - startTime;
+        crearLog(dbConnectionLocal, company.did, body.userId, body.profile, body, sendDuration.toFixed(2), error.stack, "asignar", "api", false);
         logRed(`Error al asignar paquete:  ${error.stack}`)
         throw error;
     } finally {
@@ -84,12 +96,18 @@ export async function asignar(company, userId, dataQr, driverId, deviceFrom) {
     }
 }
 
-export async function desasignar(company, userId, dataQr, deviceFrom) {
+export async function desasignar(company, userId, body, deviceFrom, startTime) {
     const dbConfig = getProdDbConfig(company);
     const dbConnection = mysql.createConnection(dbConfig);
     dbConnection.connect();
 
+    const dbConfigLocal = getDbConfig();
+    const dbConnectionLocal = mysql.createConnection(dbConfigLocal);
+    dbConnectionLocal.connect();
+
     try {
+        const dataQr = body.dataQr;
+
         const isFlex = dataQr.hasOwnProperty("sender_id");
 
         if (isFlex) {
@@ -136,8 +154,16 @@ export async function desasignar(company, userId, dataQr, deviceFrom) {
         await updateRedis(company.did, shipmentId, 0);
         logCyan("Updateo redis con la desasignación");
 
-        return { feature: "asignacion", success: true, message: "Desasignación realizada correctamente" };
+        const resultado = { feature: "asignacion", success: true, message: "Desasignación realizada correctamente" };
+
+        const sendDuration = performance.now() - startTime;
+
+        crearLog(dbConnectionLocal, company.did, body.userId, body.profile, body, sendDuration.toFixed(2), JSON.stringify(resultado), "desasignar", "api", true);
+
+        return resultado;
     } catch (error) {
+        const sendDuration = performance.now() - startTime;
+        crearLog(dbConnectionLocal, company.did, body.userId, body.profile, body, sendDuration.toFixed(2), error.stack, "desasignar", "api", false);
         logRed(`Error al desasignar paquete:  ${error.stack}`)
         throw error;
     } finally {

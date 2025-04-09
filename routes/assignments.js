@@ -6,6 +6,7 @@ import { getCompanyById } from '../db.js';
 const asignaciones = Router();
 
 asignaciones.post('/asignar', async (req, res) => {
+    const startTime = performance.now();
     const errorMessage = verifyParameters(req.body, ['dataQr', 'driverId', 'deviceFrom']);
 
     if (errorMessage) {
@@ -21,7 +22,7 @@ asignaciones.post('/asignar', async (req, res) => {
     try {
         const company = await getCompanyById(companyId);
 
-        const result = await asignar(company, userId, dataQr, driverId, deviceFrom);
+        const result = await asignar(company, userId, req.body, driverId, deviceFrom, startTime);
 
         res.status(200).json(result);
     } catch (error) {
@@ -30,6 +31,7 @@ asignaciones.post('/asignar', async (req, res) => {
 });
 
 asignaciones.post('/desasignar', async (req, res) => {
+    const startTime = performance.now();
     const errorMessage = verifyParameters(req.body, ['dataQr', 'deviceFrom']);
 
     if (errorMessage) {
@@ -45,7 +47,7 @@ asignaciones.post('/desasignar', async (req, res) => {
     try {
         const company = await getCompanyById(companyId);
 
-        const result = await desasignar(company, userId, JSON.parse(dataQr), deviceFrom);
+        const result = await desasignar(company, userId, req.body, deviceFrom, startTime);
 
         res.status(200).json(result);
     } catch (error) {
