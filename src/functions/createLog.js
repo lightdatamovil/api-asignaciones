@@ -7,8 +7,7 @@ export async function crearLog(dbConnection, empresa, usuario, perfil, body, tie
 
         const values = [empresa, usuario, perfil, JSON.stringify(body), tiempo, resultado, tipo, metodo, exito];
 
-        await executeQuery(dbConnection, sqlLog, values);
-        logGreen(`Log creado: ${JSON.stringify(values)}`);
+        await executeQuery, (conLocal, sqlLog, values);
     } catch (error) {
         logRed(`Error en crearLog: ${error.stack}`)
         throw error;
