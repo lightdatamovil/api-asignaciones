@@ -1,6 +1,7 @@
 import { executeQuery, getDbConfig, getProdDbConfig, updateRedis } from '../../db.js';
 import { logCyan, logRed, logYellow } from '../../src/functions/logsCustom.js';
 import { crearTablaAsignaciones } from '../functions/crearTablaAsignaciones.js';
+
 import { crearUsuario } from '../functions/crearUsuario.js';
 import { insertAsignacionesDB } from '../functions/insertAsignacionesDB.js';
 import { idFromFlexShipment } from '../functions/idFromFlexShipment.js';
@@ -83,12 +84,12 @@ export async function asignar(company, userId, body, driverId, deviceFrom, start
 
         const sendDuration = performance.now() - startTime;
 
-        crearLog(dbConnectionLocal, company.did, body.userId, body.profile, body, sendDuration.toFixed(2), JSON.stringify(resultado), "asignar", "api", true);
+       // crearLog(dbConnectionLocal, company.did, body.userId, body.profile, body, sendDuration.toFixed(2), JSON.stringify(resultado), "asignar", "api", true);
 
         return resultado;
     } catch (error) {
         const sendDuration = performance.now() - startTime;
-        crearLog(dbConnectionLocal, company.did, body.userId, body.profile, body, sendDuration.toFixed(2), error.stack, "asignar", "api", false);
+        //createLog(dbConnectionLocal, company.did, body.userId, body.profile, body, sendDuration.toFixed(2), error.stack, "asignar", "api", false);
         logRed(`Error al asignar paquete:  ${error.stack}`)
         throw error;
     } finally {
@@ -158,12 +159,12 @@ export async function desasignar(company, userId, body, deviceFrom, startTime) {
 
         const sendDuration = performance.now() - startTime;
 
-        crearLog(dbConnectionLocal, company.did, body.userId, body.profile, body, sendDuration.toFixed(2), JSON.stringify(resultado), "desasignar", "api", true);
+     //   crearLog(dbConnectionLocal, company.did, body.userId, body.profile, body, sendDuration.toFixed(2), JSON.stringify(resultado), "desasignar", "api", true);
 
         return resultado;
     } catch (error) {
         const sendDuration = performance.now() - startTime;
-        crearLog(dbConnectionLocal, company.did, body.userId, body.profile, body, sendDuration.toFixed(2), error.stack, "desasignar", "api", false);
+       // crearLog(dbConnectionLocal, company.did, body.userId, body.profile, body, sendDuration.toFixed(2), error.stack, "desasignar", "api", false);
         logRed(`Error al desasignar paquete:  ${error.stack}`)
         throw error;
     } finally {
