@@ -50,13 +50,14 @@ export async function asignar(
     ]);
 
     if (asignadoRows.length > 0) {
+      const sendDuration = performance.now() - startTime;
       crearLog(
         dbConnectionLocal,
         company.did,
         userId,
         body.profile,
         body,
-        startTime.toFixed(2),
+        sendDuration.toFixed(2),
         "El paquete ya se encuentra asignado a este chofer.",
         "asignar",
         "api",
@@ -77,6 +78,19 @@ export async function asignar(
     logCyan("Obtengo el estado del paquete");
 
     if (estadoRows.length === 0) {
+      const sendDuration = performance.now() - startTime;
+      crearLog(
+        dbConnectionLocal,
+        company.did,
+        userId,
+        body.profile,
+        body,
+        sendDuration.toFixed(2),
+        "No se pudo obtener el estado del paquete.",
+        "asignar",
+        "api",
+        true
+      );
       throw new Error("No se pudo obtener el estado del paquete.");
     }
 
@@ -219,13 +233,14 @@ export async function desasignar(company, userId, body, deviceFrom, startTime) {
     const operador = result.length > 0 ? result[0].operador : 0;
 
     if (operador == 0) {
+      const sendDuration = performance.now() - startTime;
       crearLog(
         dbConnectionLocal,
         company.did,
         userId,
         body.profile,
         body,
-        startTime.toFixed(2),
+        sendDuration.toFixed(2),
         "El paquete ya está desasignado",
         "desasignar",
         "api",
@@ -240,6 +255,19 @@ export async function desasignar(company, userId, body, deviceFrom, startTime) {
     logCyan("El paquete está asignado");
 
     if (!shipmentId) {
+      const sendDuration = performance.now() - startTime;
+      crearLog(
+        dbConnectionLocal,
+        company.did,
+        userId,
+        body.profile,
+        body,
+        sendDuration.toFixed(2),
+        "No se pudo obtener el id del envío.",
+        "asignar",
+        "api",
+        true
+      );
       throw new Error("No se pudo obtener el id del envío.");
     }
 

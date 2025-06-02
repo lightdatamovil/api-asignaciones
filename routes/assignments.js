@@ -29,7 +29,6 @@ asignaciones.post("/asignar", async (req, res) => {
 
   try {
     const company = await getCompanyById(companyId);
-    console.log(dataQr, "dataQr");
 
     const result = await asignar(
       company,
