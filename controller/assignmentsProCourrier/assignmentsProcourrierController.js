@@ -268,7 +268,7 @@ export async function verificacionDeAsignacion(
         userId,
         body.profile,
         body,
-        // new Date().getTime() - deviceFrom ?? 0,
+        performance.now() - startTime,
         { success: false, message },
         "AsignaciónProcourrier",
         "api",
