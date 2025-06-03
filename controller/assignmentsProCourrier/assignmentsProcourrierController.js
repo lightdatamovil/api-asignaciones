@@ -23,6 +23,10 @@ export async function verificacionDeAsignacion(
   const dbConnection = mysql.createConnection(dbConfig);
   dbConnection.connect();
 
+  const dbConfigLocal = getProdDbConfig(company, true);
+  const dbConnectionLocal = mysql.createConnection(dbConfigLocal);
+  dbConnectionLocal.connect();
+
   try {
     const isFlex = dataQr.hasOwnProperty("sender_id");
 
@@ -201,7 +205,7 @@ export async function verificacionDeAsignacion(
 
     if (noCumple) {
       crearLog(
-        dbConnection,
+        dbConnectionLocal,
         company.did,
         userId,
         body.profile,
@@ -221,7 +225,8 @@ export async function verificacionDeAsignacion(
         driverId,
         deviceFrom,
         shipmentId,
-        body
+        body,
+        dbConnectionLocal
       );
       logCyan("Asignado correctamente");
 
@@ -245,7 +250,8 @@ async function asignar(
   driverId,
   deviceFrom,
   shipmentId,
-  body
+  body,
+  dbConnectionLocal
 ) {
   try {
     const sqlAsignado = `SELECT id, estado FROM envios_asignaciones WHERE superado=0 AND elim=0 AND didEnvio = ? AND operador = ?`;
@@ -269,7 +275,7 @@ async function asignar(
 
     if (estadoRows.length === 0) {
       crearLog(
-        dbConnection,
+        dbConnectionLocal,
         company.did,
         shipmentId,
         userId,
@@ -344,7 +350,7 @@ async function asignar(
     );
     logCyan("Inserto en la base de datos individual de asignaciones");
     crearLog(
-      dbConnection,
+      dbConnectionLocal,
       company.did,
       userId,
       body.profile,
@@ -360,7 +366,7 @@ async function asignar(
     return { success: true, message: "Asignación realizada correctamente" };
   } catch (error) {
     crearLog(
-      dbConnection,
+      dbConnectionLocal,
       company.did,
       userId,
       body.profile,
@@ -375,6 +381,7 @@ async function asignar(
     throw error;
   } finally {
     dbConnection.end();
+    dbConnectionLocal.end();
   }
 }
 
