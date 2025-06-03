@@ -1,4 +1,9 @@
-import { executeQuery, getProdDbConfig, updateRedis } from "../../db.js";
+import {
+  executeQuery,
+  getDbConfig,
+  getProdDbConfig,
+  updateRedis,
+} from "../../db.js";
 import {
   createAssignmentsTable,
   createUser,
@@ -23,7 +28,7 @@ export async function verificacionDeAsignacion(
   const dbConnection = mysql.createConnection(dbConfig);
   dbConnection.connect();
 
-  const dbConfigLocal = getProdDbConfig(company, true);
+  const dbConfigLocal = getDbConfig(company, true);
   const dbConnectionLocal = mysql.createConnection(dbConfigLocal);
   dbConnectionLocal.connect();
 
