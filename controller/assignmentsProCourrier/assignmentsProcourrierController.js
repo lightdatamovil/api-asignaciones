@@ -256,6 +256,20 @@ async function asignar(
     ]);
 
     if (estadoRows.length === 0) {
+      crearLog(
+        dbConnection,
+        company.did,
+        shipmentId,
+        userId,
+        deviceFrom,
+        body.profile,
+        body,
+        new Date().getTime() - deviceFrom ?? 0,
+        { success: false, message: "No se pudo obtener el estado del paquete" },
+        "AsignaciónProcourrier",
+        "api",
+        0
+      );
       throw new Error("No se pudo obtener el estado del paquete.");
     }
     logCyan("Obtengo el estado del paquete");
@@ -333,6 +347,18 @@ async function asignar(
 
     return { success: true, message: "Asignación realizada correctamente" };
   } catch (error) {
+    crearLog(
+      dbConnection,
+      company.did,
+      userId,
+      body.profile,
+      body,
+      new Date().getTime() - deviceFrom ?? 0,
+      { success: false, message: error.message },
+      "AsignaciónProcourrier",
+      "api",
+      0
+    );
     console.error("Error al asignar paquete:", error);
     throw error;
   } finally {
