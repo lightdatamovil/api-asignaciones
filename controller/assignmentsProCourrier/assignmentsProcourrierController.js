@@ -8,6 +8,7 @@ import mysql from "mysql";
 import { idFromFlexShipment } from "../functions/idFromFlexShipment.js";
 import { idFromNoFlexShipment } from "../functions/idFromNoFlexShipment.js";
 import { crearLog } from "../../src/functions/createLog.js";
+import { logCyan } from "../../src/functions/logsCustom.js";
 
 export async function verificacionDeAsignacion(
   company,
