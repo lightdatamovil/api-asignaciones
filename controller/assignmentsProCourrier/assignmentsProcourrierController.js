@@ -13,7 +13,9 @@ import mysql from "mysql";
 import { idFromFlexShipment } from "../functions/idFromFlexShipment.js";
 import { idFromNoFlexShipment } from "../functions/idFromNoFlexShipment.js";
 import { crearLog } from "../../src/functions/createLog.js";
-import { logCyan } from "../../src/functions/logsCustom.js";
+import { logCyan, logRed } from "../../src/functions/logsCustom.js";
+
+import mysql2 from "mysql2/promise";
 
 export async function verificacionDeAsignacion(
   company,
@@ -34,7 +36,7 @@ export async function verificacionDeAsignacion(
   dbConnectionLocal.connect();
 
   try {
-    const isFlex = dataQr.hasOwnProperty("sender_id");
+    const isFlex = Object.prototype.hasOwnProperty.call(dataQr, "sender_id");
 
     const shipmentId = isFlex
       ? await idFromFlexShipment(dataQr.id, dbConnection)
@@ -64,13 +66,13 @@ export async function verificacionDeAsignacion(
         dbConnectionLocal,
         company.did,
         userId,
-        body.profile,
+        profile,
         body,
         performance.now() - startTime,
         "No se encontró el paquete.",
-        "AsignaciónProcourrier",
+        "asignar-procourrier",
         "api",
-        0
+        1
       );
       return { success: false, message: "No se encontró el paquete." };
     }
@@ -133,13 +135,13 @@ export async function verificacionDeAsignacion(
           dbConnectionLocal,
           company.did,
           userId,
-          body.profile,
+          profile,
           body,
           performance.now() - startTime,
           "Este paquete ya fue asignado a otro cadete",
-          "AsignaciónProcourrier",
+          "asignar-procourrier",
           "api",
-          0
+          1
         );
         return {
           estadoRespuesta: false,
@@ -163,13 +165,13 @@ export async function verificacionDeAsignacion(
           dbConnectionLocal,
           company.did,
           userId,
-          body.profile,
+          profile,
           body,
           performance.now() - startTime,
           "Este paquete ya fue auto asignado por otro cadete.",
-          "AsignaciónProcourrier",
+          "asignar-procourrier",
           "api",
-          0
+          1
         );
         return {
           estadoRespuesta: false,
@@ -192,13 +194,13 @@ export async function verificacionDeAsignacion(
           dbConnectionLocal,
           company.did,
           userId,
-          body.profile,
+          profile,
           body,
           performance.now() - startTime,
           "Este paquete esta asignado a otro cadete.",
-          "AsignaciónProcourrier",
+          "asignar-procourrier",
           "api",
-          0
+          1
         );
 
         return {
@@ -266,15 +268,15 @@ export async function verificacionDeAsignacion(
         dbConnectionLocal,
         company.did,
         userId,
-        body.profile,
+        profile,
         body,
         performance.now() - startTime,
         { success: false, message },
-        "AsignaciónProcourrier",
+        "asignar-procourrier",
         "api",
-        0
+        1
       );
-      return { success: false, message };
+      return { success: false, message: message };
     } else {
       await asignar(
         dbConnection,
@@ -285,7 +287,8 @@ export async function verificacionDeAsignacion(
         shipmentId,
         body,
         dbConnectionLocal,
-        startTime
+        startTime,
+        profile
       );
       logCyan("Asignado correctamente");
 
@@ -299,13 +302,13 @@ export async function verificacionDeAsignacion(
       dbConnectionLocal,
       company.did,
       userId,
-      body.profile,
+      profile,
       body,
       performance.now() - startTime,
-      { success: false, message: error.message },
-      "AsignaciónProcourrier",
+      error,
+      "asignar-procourrier",
       "api",
-      0
+      1
     );
     console.error("Error al verificar la asignación:", error);
     throw error;
@@ -323,7 +326,8 @@ async function asignar(
   shipmentId,
   body,
   dbConnectionLocal,
-  startTime
+  startTime,
+  profile
 ) {
   const sqlAsignado = `SELECT id, estado FROM envios_asignaciones WHERE superado=0 AND elim=0 AND didEnvio = ? AND operador = ?`;
   const asignadoRows = await executeQuery(dbConnection, sqlAsignado, [
@@ -403,30 +407,37 @@ async function asignar(
     deviceFrom
   );
   logCyan("Inserto en la base de datos individual de asignaciones");
-
+  const resultado = {
+    success: true,
+    message: "Asignación realizada correctamente",
+  };
   crearLog(
     dbConnectionLocal,
     company.did,
     userId,
-    body.profile,
+    profile,
     body,
     performance.now() - startTime,
-    { success: true, message: "Asignación realizada correctamente" },
-    "AsignaciónProcourrier",
+    resultado,
+    "asignar-procourrier",
     "api",
     1
   );
 
-  return { success: true, message: "Asignación realizada correctamente" };
+  return resultado;
 }
 
-export async function desasignar(company, userId, dataQr, deviceFrom) {
+export async function desasignar(startTime, company, userId, body, deviceFrom) {
   const dbConfig = getProdDbConfig(company);
-  const dbConnection = mysql.createConnection(dbConfig);
-  dbConnection.connect();
+  const dbConnection = await mysql2.createConnection(dbConfig);
+
+  const dbConfigLocal = getDbConfig();
+  const dbConnectionLocal = await mysql2.createConnection(dbConfigLocal);
 
   try {
-    const isFlex = dataQr.hasOwnProperty("sender_id");
+    const dataQr = body.dataQr;
+
+    const isFlex = Object.prototype.hasOwnProperty.call(dataQr, "sender_id");
 
     const shipmentId = isFlex
       ? await idFromFlexShipment(dataQr.id, dbConnection)
@@ -445,7 +456,10 @@ export async function desasignar(company, userId, dataQr, deviceFrom) {
     const operador = result.length > 0 ? result[0].operador : 0;
 
     if (operador == 0) {
-      return { success: false, message: "El paquete ya está desasignado" };
+      return {
+        estadoRespuesta: false,
+        mensaje: "El paquete ya está desasignado",
+      };
     }
     logCyan("El paquete está asignado");
 
@@ -454,11 +468,11 @@ export async function desasignar(company, userId, dataQr, deviceFrom) {
     }
 
     const setEstadoAsignacion =
-      "UPDATE envios SET estadoAsignacion = 0 WHERE superado=0 AND elim=0 AND did = ?";
+      "UPDATE envios SET estadoAsignacion = 0 WHERE superado = 0 AND elim=0 AND did = ?";
     await executeQuery(dbConnection, setEstadoAsignacion, [shipmentId]);
 
     const sq =
-      "SELECT estado FROM `envios_historial` WHERE  didEnvio = ? and superado=0 LIMIT 1";
+      "SELECT estado FROM `envios_historial` WHERE  didEnvio = ? and superado = 0 LIMIT 1";
     const estado = await executeQuery(dbConnection, sq, [shipmentId]);
 
     const insertQuery =
@@ -475,21 +489,21 @@ export async function desasignar(company, userId, dataQr, deviceFrom) {
     // Actualizar asignaciones
     await executeQuery(
       dbConnection,
-      `UPDATE envios_asignaciones SET superado=1, did=${resultInsertQuery.insertId} WHERE superado=0 AND elim=0 AND didEnvio = ?`,
+      `UPDATE envios_asignaciones SET superado = 1 WHERE superado = 0 AND elim=0 AND didEnvio = ? AND did != ${resultInsertQuery.insertId}`,
       [shipmentId]
     );
 
     // Actualizar historial
     await executeQuery(
       dbConnection,
-      `UPDATE envios_historial SET didCadete=0 WHERE superado=0 AND elim=0 AND didEnvio = ?`,
+      `UPDATE envios_historial SET didCadete=0 WHERE superado = 0 AND elim=0 AND didEnvio = ?`,
       [shipmentId]
     );
 
     // Desasignar chofer
     await executeQuery(
       dbConnection,
-      `UPDATE envios SET choferAsignado = 0 WHERE superado=0 AND elim=0 AND did = ?`,
+      `UPDATE envios SET choferAsignado = 0 WHERE superado = 0 AND elim=0 AND did = ?`,
       [shipmentId]
     );
     logCyan("Updateo las tablas");
@@ -498,20 +512,57 @@ export async function desasignar(company, userId, dataQr, deviceFrom) {
     logCyan("Updateo redis con la desasignación");
 
     await insertAsignacionesDB(
+      dbConnectionLocal,
       company.did,
-      did,
-      driverId,
+      shipmentId,
+      0,
       estado[0].estado,
       userId,
       deviceFrom
     );
     logCyan("Inserto en la base de datos individual de asignaciones");
 
-    return { success: true, message: "Desasignación realizada correctamente" };
+    const sendDuration = performance.now() - startTime;
+
+    const resultado = {
+      success: true,
+      message: "desasignación realizada correctamente",
+    };
+    crearLog(
+      dbConnectionLocal,
+      company.did,
+      body.userId,
+      body.profile,
+      body,
+      sendDuration.toFixed(2),
+      JSON.stringify(resultado),
+      "desasignar-Procourrier",
+      "api",
+      true
+    );
+
+    return resultado;
   } catch (error) {
-    console.error("Error al desasignar paquete:", error);
+    const sendDuration = performance.now() - startTime;
+
+    logRed(`Error al desasignar paquete:  ${error.stack}`);
+
+    crearLog(
+      dbConnectionLocal,
+      company.did,
+      userId,
+      body.profile,
+      body,
+      sendDuration.toFixed(2),
+      error.stack,
+      "desasignar-procourrier",
+      "api",
+      false
+    );
+
     throw error;
   } finally {
     dbConnection.end();
+    dbConnectionLocal.end();
   }
 }

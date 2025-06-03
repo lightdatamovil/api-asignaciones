@@ -4,7 +4,7 @@ import {
   getProdDbConfig,
   updateRedis,
 } from "../../db.js";
-import { logCyan, logRed, logYellow } from "../../src/functions/logsCustom.js";
+import { logCyan, logRed } from "../../src/functions/logsCustom.js";
 import { crearTablaAsignaciones } from "../functions/crearTablaAsignaciones.js";
 
 import { crearUsuario } from "../functions/crearUsuario.js";
@@ -32,7 +32,7 @@ export async function asignar(
 
   try {
     const dataQr = body.dataQr;
-    const isFlex = dataQr.hasOwnProperty("sender_id");
+    const isFlex = Object.prototype.hasOwnProperty.call(dataQr, "sender_id");
     if (isFlex) {
       logCyan("Es Flex");
     } else {
@@ -201,7 +201,7 @@ export async function desasignar(company, userId, body, deviceFrom, startTime) {
   try {
     const dataQr = body.dataQr;
 
-    const isFlex = dataQr.hasOwnProperty("sender_id");
+    const isFlex = Object.prototype.hasOwnProperty.call(dataQr, "sender_id");
 
     if (isFlex) {
       logCyan("Es Flex");
