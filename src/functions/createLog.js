@@ -22,7 +22,7 @@ export async function crearLog(
       perfil,
       JSON.stringify(body),
       tiempo,
-      resultado,
+      JSON.stringify(resultado),
       tipo,
       metodo,
       exito,
