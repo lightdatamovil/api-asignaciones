@@ -5,7 +5,6 @@ import {
 } from "../controller/assignments/assignmentsController.js";
 import { verifyParameters } from "../src/functions/verifyParameters.js";
 import { getCompanyById } from "../db.js";
-import { crearLog } from "../src/functions/createLog.js";
 
 const asignaciones = Router();
 
@@ -54,7 +53,7 @@ asignaciones.post("/desasignar", async (req, res) => {
     return res.status(400).json({ message: errorMessage });
   }
 
-  const { companyId, userId, dataQr, deviceFrom } = req.body;
+  const { companyId, userId, deviceFrom } = req.body;
 
   if (companyId == 12 && userId == 49) {
     return res.status(200).json({ message: "Comunicarse con la logística." });

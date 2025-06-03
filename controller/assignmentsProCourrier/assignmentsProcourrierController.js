@@ -24,6 +24,7 @@ export async function verificacionDeAsignacion(
   deviceFrom,
   body
 ) {
+  const startTime = performance.now();
   const dbConfig = getProdDbConfig(company);
   const dbConnection = mysql.createConnection(dbConfig);
   dbConnection.connect();
@@ -59,6 +60,18 @@ export async function verificacionDeAsignacion(
     const envios = await executeQuery(dbConnection, sql, []);
 
     if (envios.length === 0) {
+      crearLog(
+        dbConnectionLocal,
+        company.did,
+        userId,
+        body.profile,
+        body,
+        performance.now() - startTime,
+        "No se encontró el paquete.",
+        "AsignaciónProcourrier",
+        "api",
+        0
+      );
       return { success: false, message: "No se encontró el paquete." };
     }
     logCyan("Obtengo el envío");
@@ -115,6 +128,19 @@ export async function verificacionDeAsignacion(
           1,
           deviceFrom,
         ]);
+
+        crearLog(
+          dbConnectionLocal,
+          company.did,
+          userId,
+          body.profile,
+          body,
+          performance.now() - startTime,
+          "Este paquete ya fue asignado a otro cadete",
+          "AsignaciónProcourrier",
+          "api",
+          0
+        );
         return {
           estadoRespuesta: false,
           mensaje: "Este paquete ya fue asignado a otro cadete",
@@ -132,6 +158,19 @@ export async function verificacionDeAsignacion(
           2,
           deviceFrom,
         ]);
+
+        crearLog(
+          dbConnectionLocal,
+          company.did,
+          userId,
+          body.profile,
+          body,
+          performance.now() - startTime,
+          "Este paquete ya fue auto asignado por otro cadete.",
+          "AsignaciónProcourrier",
+          "api",
+          0
+        );
         return {
           estadoRespuesta: false,
           mensaje: "Este paquete ya fue auto asignado por otro cadete",
@@ -148,6 +187,20 @@ export async function verificacionDeAsignacion(
           3,
           deviceFrom,
         ]);
+
+        crearLog(
+          dbConnectionLocal,
+          company.did,
+          userId,
+          body.profile,
+          body,
+          performance.now() - startTime,
+          "Este paquete esta asignado a otro cadete.",
+          "AsignaciónProcourrier",
+          "api",
+          0
+        );
+
         return {
           estadoRespuesta: false,
           mensaje: "Este paquete esta asignado a otro cadete",
@@ -215,7 +268,7 @@ export async function verificacionDeAsignacion(
         userId,
         body.profile,
         body,
-        new Date().getTime() - deviceFrom ?? 0,
+        // new Date().getTime() - deviceFrom ?? 0,
         { success: false, message },
         "AsignaciónProcourrier",
         "api",
@@ -231,7 +284,8 @@ export async function verificacionDeAsignacion(
         deviceFrom,
         shipmentId,
         body,
-        dbConnectionLocal
+        dbConnectionLocal,
+        startTime
       );
       logCyan("Asignado correctamente");
 
@@ -241,6 +295,18 @@ export async function verificacionDeAsignacion(
       return { success: true, message };
     }
   } catch (error) {
+    crearLog(
+      dbConnectionLocal,
+      company.did,
+      userId,
+      body.profile,
+      body,
+      performance.now() - startTime,
+      { success: false, message: error.message },
+      "AsignaciónProcourrier",
+      "api",
+      0
+    );
     console.error("Error al verificar la asignación:", error);
     throw error;
   } finally {
@@ -256,138 +322,102 @@ async function asignar(
   deviceFrom,
   shipmentId,
   body,
-  dbConnectionLocal
+  dbConnectionLocal,
+  startTime
 ) {
-  try {
-    const sqlAsignado = `SELECT id, estado FROM envios_asignaciones WHERE superado=0 AND elim=0 AND didEnvio = ? AND operador = ?`;
-    const asignadoRows = await executeQuery(dbConnection, sqlAsignado, [
-      shipmentId,
-      driverId,
-    ]);
+  const sqlAsignado = `SELECT id, estado FROM envios_asignaciones WHERE superado=0 AND elim=0 AND didEnvio = ? AND operador = ?`;
+  const asignadoRows = await executeQuery(dbConnection, sqlAsignado, [
+    shipmentId,
+    driverId,
+  ]);
 
-    if (asignadoRows.length > 0) {
-      return {
-        success: false,
-        message: "El paquete ya se encuentra asignado a este chofer.",
-      };
-    }
-    logCyan("El paquete todavia no está asignado");
-
-    const estadoQuery = `SELECT estado FROM envios_historial WHERE superado=0 AND elim=0 AND didEnvio = ?`;
-    const estadoRows = await executeQuery(dbConnection, estadoQuery, [
-      shipmentId,
-    ]);
-
-    if (estadoRows.length === 0) {
-      crearLog(
-        dbConnectionLocal,
-        company.did,
-        shipmentId,
-        userId,
-        deviceFrom,
-        body.profile,
-        body,
-        new Date().getTime() - deviceFrom ?? 0,
-        { success: false, message: "No se pudo obtener el estado del paquete" },
-        "AsignaciónProcourrier",
-        "api",
-        0
-      );
-      throw new Error("No se pudo obtener el estado del paquete.");
-    }
-    logCyan("Obtengo el estado del paquete");
-
-    const estado = estadoRows[0].estado;
-
-    await createAssignmentsTable(company.did, dbConnection);
-    logCyan("Creo la tabla de asignaciones");
-    await createUser(company.did, dbConnection);
-    logCyan("Creo la tabla de usuarios");
-
-    const insertSql = `INSERT INTO envios_asignaciones (did, operador, didEnvio, estado, quien, desde) VALUES (?, ?, ?, ?, ?, ?)`;
-    const result = await executeQuery(dbConnection, insertSql, [
-      "",
-      driverId,
-      shipmentId,
-      estado,
-      userId,
-      deviceFrom,
-    ]);
-    logCyan("Inserto en la tabla de asignaciones");
-
-    const did = result.insertId;
-
-    const queries = [
-      {
-        sql: `UPDATE envios_asignaciones SET did = ? WHERE superado=0 AND elim=0 AND id = ?`,
-        values: [did, did],
-      },
-      {
-        sql: `UPDATE envios_asignaciones SET superado = 1 WHERE superado=0 AND elim=0 AND didEnvio = ? AND did != ?`,
-        values: [shipmentId, did],
-      },
-      {
-        sql: `UPDATE envios SET choferAsignado = ?, costoActualizadoChofer = 0 WHERE superado=0 AND elim=0 AND did = ?`,
-        values: [driverId, shipmentId],
-      },
-      {
-        sql: `UPDATE ruteo_paradas SET superado = 1 WHERE superado=0 AND elim=0 AND didPaquete = ?`,
-        values: [shipmentId],
-      },
-      {
-        sql: `UPDATE envios_historial SET didCadete = ? WHERE superado=0 AND elim=0 AND didEnvio = ?`,
-        values: [driverId, shipmentId],
-      },
-    ];
-
-    for (const { sql, values } of queries) {
-      await executeQuery(dbConnection, sql, values);
-    }
-    logCyan("Updateo las tablas");
-
-    await insertAsignacionesDB(
-      company.did,
-      did,
-      driverId,
-      estado,
-      userId,
-      deviceFrom
-    );
-    logCyan("Inserto en la base de datos individual de asignaciones");
-    crearLog(
-      dbConnectionLocal,
-      company.did,
-      userId,
-      body.profile,
-      body,
-      new Date().getTime() - deviceFrom ?? 0,
-      { success: true, message: "Asignación realizada correctamente" },
-      "AsignaciónProcourrier",
-      "api",
-
-      1
-    );
-
-    return { success: true, message: "Asignación realizada correctamente" };
-  } catch (error) {
-    crearLog(
-      dbConnectionLocal,
-      company.did,
-      userId,
-      body.profile,
-      body,
-      new Date().getTime() - deviceFrom ?? 0,
-      { success: false, message: error.message },
-      "AsignaciónProcourrier",
-      "api",
-      0
-    );
-    console.error("Error al asignar paquete:", error);
-    throw error;
-  } finally {
-    dbConnection.end();
-    dbConnectionLocal.end();
+  if (asignadoRows.length > 0) {
+    throw new Error("El paquete ya se encuentra asignado a este chofer.");
   }
+  logCyan("El paquete todavía no está asignado");
+
+  const estadoQuery = `SELECT estado FROM envios_historial WHERE superado=0 AND elim=0 AND didEnvio = ?`;
+  const estadoRows = await executeQuery(dbConnection, estadoQuery, [
+    shipmentId,
+  ]);
+
+  if (estadoRows.length === 0) {
+    throw new Error("No se pudo obtener el estado del paquete.");
+  }
+  logCyan("Obtengo el estado del paquete");
+
+  const estado = estadoRows[0].estado;
+
+  await createAssignmentsTable(company.did, dbConnection);
+  logCyan("Creo la tabla de asignaciones");
+  await createUser(company.did, dbConnection);
+  logCyan("Creo la tabla de usuarios");
+
+  const insertSql = `INSERT INTO envios_asignaciones (did, operador, didEnvio, estado, quien, desde) VALUES (?, ?, ?, ?, ?, ?)`;
+  const result = await executeQuery(dbConnection, insertSql, [
+    "",
+    driverId,
+    shipmentId,
+    estado,
+    userId,
+    deviceFrom,
+  ]);
+  logCyan("Inserto en la tabla de asignaciones");
+
+  const did = result.insertId;
+
+  const queries = [
+    {
+      sql: `UPDATE envios_asignaciones SET did = ? WHERE superado=0 AND elim=0 AND id = ?`,
+      values: [did, did],
+    },
+    {
+      sql: `UPDATE envios_asignaciones SET superado = 1 WHERE superado=0 AND elim=0 AND didEnvio = ? AND did != ?`,
+      values: [shipmentId, did],
+    },
+    {
+      sql: `UPDATE envios SET choferAsignado = ?, costoActualizadoChofer = 0 WHERE superado=0 AND elim=0 AND did = ?`,
+      values: [driverId, shipmentId],
+    },
+    {
+      sql: `UPDATE ruteo_paradas SET superado = 1 WHERE superado=0 AND elim=0 AND didPaquete = ?`,
+      values: [shipmentId],
+    },
+    {
+      sql: `UPDATE envios_historial SET didCadete = ? WHERE superado=0 AND elim=0 AND didEnvio = ?`,
+      values: [driverId, shipmentId],
+    },
+  ];
+
+  for (const { sql, values } of queries) {
+    await executeQuery(dbConnection, sql, values);
+  }
+  logCyan("Updateo las tablas");
+
+  await insertAsignacionesDB(
+    company.did,
+    did,
+    driverId,
+    estado,
+    userId,
+    deviceFrom
+  );
+  logCyan("Inserto en la base de datos individual de asignaciones");
+
+  crearLog(
+    dbConnectionLocal,
+    company.did,
+    userId,
+    body.profile,
+    body,
+    performance.now() - startTime,
+    { success: true, message: "Asignación realizada correctamente" },
+    "AsignaciónProcourrier",
+    "api",
+    1
+  );
+
+  return { success: true, message: "Asignación realizada correctamente" };
 }
 
 export async function desasignar(company, userId, dataQr, deviceFrom) {
@@ -400,7 +430,7 @@ export async function desasignar(company, userId, dataQr, deviceFrom) {
 
     const shipmentId = isFlex
       ? await idFromFlexShipment(dataQr.id, dbConnection)
-      : await idFromLightdataShipment(company, dataQr, dbConnection);
+      : await idFromNoFlexShipment(company, dataQr, dbConnection);
     if (isFlex) {
       logCyan("Es Flex");
     } else {
