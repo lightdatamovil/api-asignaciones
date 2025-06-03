@@ -269,7 +269,7 @@ export async function verificacionDeAsignacion(
         body.profile,
         body,
         performance.now() - startTime,
-        { success: false, message },
+        { estadoRespuesta: false, message },
         "AsignaciónProcourrier",
         "api",
         0
