@@ -200,6 +200,18 @@ export async function verificacionDeAsignacion(
     }
 
     if (noCumple) {
+      crearLog(
+        dbConnection,
+        company.did,
+        userId,
+        body.profile,
+        body,
+        new Date().getTime() - deviceFrom ?? 0,
+        { success: false, message },
+        "AsignaciónProcourrier",
+        "api",
+        0
+      );
       return { success: false, message };
     } else {
       await asignar(
