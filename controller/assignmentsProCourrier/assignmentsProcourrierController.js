@@ -7,6 +7,7 @@ import {
 import mysql from "mysql";
 import { idFromFlexShipment } from "../functions/idFromFlexShipment.js";
 import { idFromNoFlexShipment } from "../functions/idFromNoFlexShipment.js";
+import { crearLog } from "../../src/functions/createLog.js";
 
 export async function verificacionDeAsignacion(
   company,
@@ -14,7 +15,8 @@ export async function verificacionDeAsignacion(
   profile,
   dataQr,
   driverId,
-  deviceFrom
+  deviceFrom,
+  body
 ) {
   const dbConfig = getProdDbConfig(company);
   const dbConnection = mysql.createConnection(dbConfig);
@@ -205,7 +207,8 @@ export async function verificacionDeAsignacion(
         userId,
         driverId,
         deviceFrom,
-        shipmentId
+        shipmentId,
+        body
       );
       logCyan("Asignado correctamente");
 
@@ -228,7 +231,8 @@ async function asignar(
   userId,
   driverId,
   deviceFrom,
-  shipmentId
+  shipmentId,
+  body
 ) {
   try {
     const sqlAsignado = `SELECT id, estado FROM envios_asignaciones WHERE superado=0 AND elim=0 AND didEnvio = ? AND operador = ?`;
@@ -312,6 +316,19 @@ async function asignar(
       deviceFrom
     );
     logCyan("Inserto en la base de datos individual de asignaciones");
+    crearLog(
+      dbConnection,
+      company.did,
+      userId,
+      body.profile,
+      body,
+      new Date().getTime() - deviceFrom ?? 0,
+      { success: true, message: "Asignación realizada correctamente" },
+      "AsignaciónProcourrier",
+      "api",
+
+      1
+    );
 
     return { success: true, message: "Asignación realizada correctamente" };
   } catch (error) {

@@ -1,56 +1,81 @@
-import { Router } from 'express';
-import { desasignar, verificacionDeAsignacion } from '../controller/assignmentsProCourrier/assignmentsProcourrierController.js';
-import { verifyParameters } from '../src/functions/verifyParameters.js';
-import { getCompanyById } from '../db.js';
+import { Router } from "express";
+import {
+  desasignar,
+  verificacionDeAsignacion,
+} from "../controller/assignmentsProCourrier/assignmentsProcourrierController.js";
+import { verifyParameters } from "../src/functions/verifyParameters.js";
+import { getCompanyById } from "../db.js";
 
 const asignacionesProcourrier = Router();
 
-asignacionesProcourrier.post('/asignar', async (req, res) => {
-    const errorMessage = verifyParameters(req.body, ['dataQr', 'driverId', 'deviceFrom']);
+asignacionesProcourrier.post("/asignar", async (req, res) => {
+  const errorMessage = verifyParameters(req.body, [
+    "dataQr",
+    "driverId",
+    "deviceFrom",
+  ]);
 
-    if (errorMessage) {
-        return res.status(400).json({ message: errorMessage });
-    }
+  if (errorMessage) {
+    return res.status(400).json({ message: errorMessage });
+  }
 
-    const { companyId, userId, profile, dataQr, driverId, deviceFrom } = req.body;
+  const { companyId, userId, profile, dataQr, driverId, deviceFrom } = req.body;
 
-    if (companyId == 12 && userId == 49) {
-        return res.status(200).json({ message: "Comunicarse con la logística." });
-    }
+  if (companyId == 12 && userId == 49) {
+    return res.status(200).json({ message: "Comunicarse con la logística." });
+  }
 
-    try {
-        const company = await getCompanyById(companyId);
+  try {
+    const body = req.body;
+    const company = await getCompanyById(companyId);
 
-        const result = await verificacionDeAsignacion(company, userId, profile, JSON.parse(dataQr), driverId, deviceFrom);
+    const result = await verificacionDeAsignacion(
+      company,
+      userId,
+      profile,
+      JSON.parse(dataQr),
+      driverId,
+      deviceFrom,
+      body
+    );
 
-        res.status(200).json(result);
-    } catch (error) {
-        res.status(500).json({ message: error.stack });
-    }
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({ message: error.stack });
+  }
 });
 
-asignacionesProcourrier.post('/desasignar', async (req, res) => {
-    const errorMessage = verifyParameters(req.body, ['dataQr', 'driverId', 'deviceFrom']);
+asignacionesProcourrier.post("/desasignar", async (req, res) => {
+  const errorMessage = verifyParameters(req.body, [
+    "dataQr",
+    "driverId",
+    "deviceFrom",
+  ]);
 
-    if (errorMessage) {
-        return res.status(400).json({ message: errorMessage });
-    }
+  if (errorMessage) {
+    return res.status(400).json({ message: errorMessage });
+  }
 
-    const { companyId, userId, dataQr, deviceFrom } = req.body;
+  const { companyId, userId, dataQr, deviceFrom } = req.body;
 
-    if (companyId == 12 && userId == 49) {
-        return res.status(200).json({ message: "Comunicarse con la logística." });
-    }
+  if (companyId == 12 && userId == 49) {
+    return res.status(200).json({ message: "Comunicarse con la logística." });
+  }
 
-    try {
-        const company = await getCompanyById(companyId);
+  try {
+    const company = await getCompanyById(companyId);
 
-        const result = await desasignar(company, userId, JSON.parse(dataQr), deviceFrom);
+    const result = await desasignar(
+      company,
+      userId,
+      JSON.parse(dataQr),
+      deviceFrom
+    );
 
-        res.status(200).json(result);
-    } catch (error) {
-        res.status(500).json({ message: error.stack });
-    }
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({ message: error.stack });
+  }
 });
 
 export default asignacionesProcourrier;
