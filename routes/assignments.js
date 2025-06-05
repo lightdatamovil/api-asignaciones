@@ -6,6 +6,7 @@ import {
 import { verifyParameters } from "../src/functions/verifyParameters.js";
 import { getCompanyById } from "../db.js";
 import { verificacionDeAsignacion } from "../controller/assignmentsProCourrier/assignmentsProcourrierController.js";
+import { logYellow } from "../src/functions/logsCustom.js";
 
 const asignaciones = Router();
 
@@ -21,7 +22,7 @@ asignaciones.post("/asignar", async (req, res) => {
     return res.status(400).json({ message: errorMessage });
   }
 
-  const { companyId, userId, dataQr, driverId, deviceFrom } = req.body;
+  const { companyId, userId, dataQr, driverId, deviceFrom, profile } = req.body;
 
   if (companyId == 12 && userId == 49) {
     return res.status(200).json({ message: "Comunicarse con la logística." });
@@ -29,9 +30,9 @@ asignaciones.post("/asignar", async (req, res) => {
 
   try {
     const company = await getCompanyById(companyId);
-    console.log(dataQr, "dataQr");
     let result = null;
     if (company.did == 4) {
+      logYellow(`Es la empresa ProCourrier, se procede a verificar asignación`);
       result = await verificacionDeAsignacion(
         company,
         userId,
@@ -39,9 +40,10 @@ asignaciones.post("/asignar", async (req, res) => {
         JSON.parse(dataQr),
         driverId,
         deviceFrom,
-        body
+        req.body
       );
     } else {
+      logYellow(`Es la empresa ${company.nombre}, se procede a asignar`);
       result = await asignar(
         company,
         userId,
