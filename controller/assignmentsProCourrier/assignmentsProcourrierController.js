@@ -439,18 +439,18 @@ export async function desasignar(startTime, company, userId, body, deviceFrom) {
 
     const isFlex = Object.prototype.hasOwnProperty.call(dataQr, "sender_id");
 
-    const shipmentId = isFlex
-      ? await idFromFlexShipment(dataQr.id, dbConnection)
-      : await idFromNoFlexShipment(company, dataQr, dbConnection);
     if (isFlex) {
       logCyan("Es Flex");
     } else {
       logCyan("No es Flex");
     }
 
+    const shipmentId = isFlex
+      ? await idFromFlexShipment(dataQr.id, dbConnection)
+      : await idFromNoFlexShipment(company, dataQr, dbConnection);
+
     const sqlOperador =
       "SELECT operador FROM envios_asignaciones WHERE didEnvio = ? AND superado = 0 AND elim = 0";
-
     const result = await executeQuery(dbConnection, sqlOperador, [shipmentId]);
 
     const operador = result.length > 0 ? result[0].operador : 0;

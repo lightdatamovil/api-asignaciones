@@ -242,6 +242,11 @@ export async function desasignar(company, userId, body, deviceFrom, startTime) {
     if (!shipmentId) {
       throw new Error("No se pudo obtener el id del envío.");
     }
+    if (company.did == 4) {
+      const setEstadoAsignacion =
+        "UPDATE envios SET estadoAsignacion = 0 WHERE superado = 0 AND elim=0 AND did = ?";
+      await executeQuery(dbConnection, setEstadoAsignacion, [shipmentId]);
+    }
 
     const insertQuery =
       "INSERT INTO envios_asignaciones (did, operador, didEnvio, estado, quien, desde) VALUES (?, ?, ?, ?, ?, ?)";

@@ -5,6 +5,7 @@ import {
 } from "../controller/assignments/assignmentsController.js";
 import { verifyParameters } from "../src/functions/verifyParameters.js";
 import { getCompanyById } from "../db.js";
+import { verificacionDeAsignacion } from "../controller/assignmentsProCourrier/assignmentsProcourrierController.js";
 
 const asignaciones = Router();
 
@@ -29,15 +30,28 @@ asignaciones.post("/asignar", async (req, res) => {
   try {
     const company = await getCompanyById(companyId);
     console.log(dataQr, "dataQr");
+    let result = null;
+    if (company.did == 4) {
+      result = await verificacionDeAsignacion(
+        company,
+        userId,
+        profile,
+        JSON.parse(dataQr),
+        driverId,
+        deviceFrom,
+        body
+      );
+    } else {
+      result = await asignar(
+        company,
+        userId,
+        req.body,
+        driverId,
+        deviceFrom,
+        startTime
+      );
+    }
 
-    const result = await asignar(
-      company,
-      userId,
-      req.body,
-      driverId,
-      deviceFrom,
-      startTime
-    );
 
     res.status(200).json(result);
   } catch (error) {
