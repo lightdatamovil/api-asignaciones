@@ -6,7 +6,7 @@ import {
 import { verifyParameters } from "../src/functions/verifyParameters.js";
 import { getCompanyById } from "../db.js";
 import { verificacionDeAsignacion } from "../controller/assignmentsProCourrier/assignmentsProcourrierController.js";
-import { logYellow } from "../src/functions/logsCustom.js";
+import { logPurple, logYellow } from "../src/functions/logsCustom.js";
 
 const asignaciones = Router();
 
@@ -43,7 +43,7 @@ asignaciones.post("/asignar", async (req, res) => {
         req.body
       );
     } else {
-      logYellow(`Es la empresa ${company.nombre}, se procede a asignar`);
+      logYellow(`Es la empresa ${company.empresa}, se procede a asignar`);
       result = await asignar(
         company,
         userId,
@@ -58,6 +58,8 @@ asignaciones.post("/asignar", async (req, res) => {
     res.status(200).json(result);
   } catch (error) {
     res.status(500).json({ message: error.stack });
+  } finally {
+    logPurple(`Tiempo de ejecución: ${performance.now() - startTime} ms`);
   }
 });
 
@@ -89,6 +91,8 @@ asignaciones.post("/desasignar", async (req, res) => {
     res.status(200).json(result);
   } catch (error) {
     res.status(500).json({ message: error.stack });
+  } finally {
+    logPurple(`Tiempo de ejecución: ${performance.now() - startTime} ms`);
   }
 });
 
