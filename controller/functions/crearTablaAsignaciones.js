@@ -1,10 +1,6 @@
-import { executeQuery, getDbConfig } from '../../db.js';
+import { executeQuery } from '../../db.js';
 import { logRed } from '../../src/functions/logsCustom.js';
-import mysql from 'mysql';
-export async function crearTablaAsignaciones(companyId) {
-    const dbConfig = getDbConfig();
-    const dbConnection = mysql.createConnection(dbConfig);
-    dbConnection.connect();
+export async function crearTablaAsignaciones(dbConnectionLocal, companyId) {
 
     try {
         const createTableSql = `
@@ -25,12 +21,10 @@ export async function crearTablaAsignaciones(companyId) {
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
         `;
 
-        await executeQuery(dbConnection, createTableSql);
+        await executeQuery(dbConnectionLocal, createTableSql);
     } catch (error) {
         logRed(`Error al crear la tabla de asignaciones:  ${error.stack}`)
 
         throw error;
-    } finally {
-        dbConnection.end();
     }
 }
