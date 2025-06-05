@@ -82,10 +82,10 @@ export async function asignar(
 
     const estado = estadoRows[0].estado;
 
-    await crearTablaAsignaciones(company.did);
+    await crearTablaAsignaciones(dbConnectionLocal, company.did);
     logCyan("Creo la tabla de asignaciones");
 
-    await crearUsuario(company.did);
+    await crearUsuario(dbConnectionLocal, company.did);
     logCyan("Creo el usuario");
 
     const insertSql = `INSERT INTO envios_asignaciones (did, operador, didEnvio, estado, quien, desde) VALUES (?, ?, ?, ?, ?, ?)`;
@@ -133,7 +133,7 @@ export async function asignar(
     }
     logCyan("Updateo las tablas");
 
-    await insertAsignacionesDB(
+    await insertAsignacionesDB(dbConnectionLocal,
       company.did,
       did,
       driverId,
@@ -283,7 +283,7 @@ export async function desasignar(company, userId, body, deviceFrom, startTime) {
 
     logCyan("Updateo las tablas");
 
-    await insertAsignacionesDB(
+    await insertAsignacionesDB(dbConnectionLocal,
       company.did,
       shipmentId,
       0,

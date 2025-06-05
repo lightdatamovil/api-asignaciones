@@ -1,9 +1,8 @@
-import { executeQuery, getDbConfig } from "../../db.js";
+import { executeQuery } from "../../db.js";
 
-import mysql2 from "mysql2";
 import { logRed } from "../../src/functions/logsCustom.js";
 
-export async function insertAsignacionesDB(
+export async function insertAsignacionesDB(dbConnectionLocal,
   companyId,
   shipmentId,
   driverId,
@@ -11,22 +10,19 @@ export async function insertAsignacionesDB(
   userId,
   deviceFrom
 ) {
-  const dbConfig = getDbConfig();
-  const dbConnection = mysql2.createConnection(dbConfig);
-  dbConnection.connect();
 
   try {
     const checkSql = `SELECT id FROM asignaciones_${companyId} WHERE didenvio = ? AND superado = 0`;
-    const existingRecords = await executeQuery(dbConnection, checkSql, [
+    const existingRecords = await executeQuery(dbConnectionLocal, checkSql, [
       shipmentId,
     ]);
 
     if (existingRecords.length > 0) {
       const updateSql = `UPDATE asignaciones_${companyId} SET superado = 1 WHERE id = ?`;
-      await executeQuery(dbConnection, updateSql, [existingRecords[0].id]);
+      await executeQuery(dbConnectionLocal, updateSql, [existingRecords[0].id]);
 
       const insertSql = `INSERT INTO asignaciones_${companyId} (didenvio, chofer, estado, quien, desde) VALUES (?, ?, ?, ?, ?)`;
-      await executeQuery(dbConnection, insertSql, [
+      await executeQuery(dbConnectionLocal, insertSql, [
         shipmentId,
         driverId,
         shipmentState,
@@ -35,7 +31,7 @@ export async function insertAsignacionesDB(
       ]);
     } else {
       const insertSql = `INSERT INTO asignaciones_${companyId} (didenvio, chofer, estado, quien, desde) VALUES (?, ?, ?, ?, ?)`;
-      await executeQuery(dbConnection, insertSql, [
+      await executeQuery(dbConnectionLocal, insertSql, [
         shipmentId,
         driverId,
         shipmentState,
@@ -49,7 +45,5 @@ export async function insertAsignacionesDB(
     );
 
     throw error;
-  } finally {
-    dbConnection.end();
   }
 }
