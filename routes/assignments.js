@@ -37,7 +37,7 @@ asignaciones.post("/asignar", async (req, res) => {
         company,
         userId,
         profile,
-        JSON.parse(dataQr),
+        dataQr,
         driverId,
         deviceFrom,
         req.body
