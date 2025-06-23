@@ -13,6 +13,36 @@ import { idFromFlexShipment } from "../functions/idFromFlexShipment.js";
 import { idFromNoFlexShipment } from "../functions/idFromNoFlexShipment.js";
 import mysql from "mysql";
 import { crearLog } from "../../src/functions/createLog.js";
+import axios from "axios";
+
+export async function getShipmentIdFromQr(companyId, dataQr) {
+
+  try {
+    const payload = {
+      companyId: Number(companyId),
+      userId: 0,
+      profile: 0,
+      deviceId: "null",
+      brand: "null",
+      model: "null",
+      androidVersion: "null",
+      deviceFrom: "Autoasignado de colecta",
+      appVersion: "null",
+      dataQr: dataQr
+    };
+
+    const result = await axios.post('https://apimovil2test.lightdata.app/api/qr/get-shipment-id', payload);
+    if (result.status == 200) {
+      return result.body;
+    } else {
+      logRed("Error al obtener el shipmentId");
+      throw new Error("Error al obtener el shipmentId");
+    }
+  } catch (error) {
+    logRed(`Error al obtener el shipmentId: ${error.stack}`);
+    throw error;
+  }
+}
 
 export async function asignar(
   company,
@@ -32,16 +62,8 @@ export async function asignar(
 
   try {
     const dataQr = body.dataQr;
-    const isFlex = Object.prototype.hasOwnProperty.call(dataQr, "sender_id");
-    if (isFlex) {
-      logCyan("Es Flex");
-    } else {
-      logCyan("No es Flex");
-    }
 
-    const shipmentId = isFlex
-      ? await idFromFlexShipment(dataQr.id, dbConnection)
-      : await idFromNoFlexShipment(company, dataQr, dbConnection);
+    const shipmentId = await getShipmentIdFromQr(company.did, dataQr);
 
     const sqlAsignado = `SELECT id, estado FROM envios_asignaciones WHERE superado=0 AND elim=0 AND didEnvio = ? AND operador = ?`;
     const asignadoRows = await executeQuery(dbConnection, sqlAsignado, [

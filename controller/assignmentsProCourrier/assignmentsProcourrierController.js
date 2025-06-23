@@ -33,16 +33,8 @@ export async function verificacionDeAsignacion(
   dbConnectionLocal.connect();
 
   try {
-    const isFlex = Object.prototype.hasOwnProperty.call(dataQr, "sender_id");
 
-    const shipmentId = isFlex
-      ? await idFromFlexShipment(dataQr.id, dbConnection)
-      : await idFromNoFlexShipment(company, dataQr, dbConnection);
-    if (isFlex) {
-      logCyan("Es Flex");
-    } else {
-      logCyan("No es Flex");
-    }
+    const shipmentId = await idFromNoFlexShipment(company, dataQr)
 
     let hoy = new Date();
     hoy.setDate(hoy.getDate() - 3);
