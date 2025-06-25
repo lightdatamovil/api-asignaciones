@@ -9,8 +9,6 @@ import { crearTablaAsignaciones } from "../functions/crearTablaAsignaciones.js";
 
 import { crearUsuario } from "../functions/crearUsuario.js";
 import { insertAsignacionesDB } from "../functions/insertAsignacionesDB.js";
-import { idFromFlexShipment } from "../functions/idFromFlexShipment.js";
-import { idFromNoFlexShipment } from "../functions/idFromNoFlexShipment.js";
 import mysql from "mysql";
 import { crearLog } from "../../src/functions/createLog.js";
 import axios from "axios";
@@ -223,16 +221,7 @@ export async function desasignar(company, userId, body, deviceFrom, startTime) {
   try {
     const dataQr = body.dataQr;
 
-    const isFlex = Object.prototype.hasOwnProperty.call(dataQr, "sender_id");
-
-    if (isFlex) {
-      logCyan("Es Flex");
-    } else {
-      logCyan("No es Flex");
-    }
-    const shipmentId = isFlex
-      ? await idFromFlexShipment(dataQr.id, dbConnection)
-      : await idFromNoFlexShipment(company, dataQr, dbConnection);
+    const shipmentId = await getShipmentIdFromQr(company.did, dataQr);
 
     const sqlOperador =
       "SELECT operador, estado FROM envios_asignaciones WHERE didEnvio = ? AND superado = 0 AND elim = 0";
