@@ -9,6 +9,7 @@ import { verificacionDeAsignacion } from "../controller/assignmentsProCourrier/a
 import { logPurple, logRed } from "../src/functions/logsCustom.js";
 import { crearLog } from "../src/functions/createLog.js";
 import CustomException from "../classes/custom_exception.js";
+import { getConnection } from "../src/functions/getConnection.js";
 
 const asignaciones = Router();
 
@@ -30,11 +31,18 @@ asignaciones.post("/asignar", async (req, res) => {
     return res.status(400).json({ message: "Comunicarse con la logística." });
   }
 
+  const company = await getCompanyById(companyId);
+  const dbConnection = getConnection(company);
+  dbConnection.connect(err => {
+    if (err) logRed(`Error al conectar BD: ${err.stack}`);
+  });
+
   try {
-    const company = await getCompanyById(companyId);
-    let result = null;
+    let result;
+
     if (company.did == 4) {
       result = await verificacionDeAsignacion(
+        dbConnection,
         company,
         userId,
         profile,
@@ -45,6 +53,7 @@ asignaciones.post("/asignar", async (req, res) => {
       );
     } else {
       result = await asignar(
+        dbConnection,
         company,
         userId,
         req.body,
@@ -67,6 +76,7 @@ asignaciones.post("/asignar", async (req, res) => {
       res.status(500).json({ title: 'Error interno del servidor', message: 'Unhandled Error', stack: error.stack });
     }
   } finally {
+    dbConnection.end();
     logPurple(`Tiempo de ejecución: ${performance.now() - startTime} ms`);
   }
 });
@@ -85,10 +95,13 @@ asignaciones.post("/desasignar", async (req, res) => {
     return res.status(400).json({ message: "Comunicarse con la logística." });
   }
 
+  const company = await getCompanyById(companyId);
+
+  const dbConnection = getConnection(company).connect();
   try {
-    const company = await getCompanyById(companyId);
 
     const result = await desasignar(
+      dbConnection,
       company,
       userId,
       req.body,
@@ -108,6 +121,7 @@ asignaciones.post("/desasignar", async (req, res) => {
       res.status(500).json({ title: 'Error interno del servidor', message: 'Unhandled Error', stack: error.stack });
     }
   } finally {
+    dbConnection.end();
     logPurple(`Tiempo de ejecución: ${performance.now() - startTime} ms`);
   }
 });

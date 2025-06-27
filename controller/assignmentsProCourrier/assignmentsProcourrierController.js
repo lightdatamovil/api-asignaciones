@@ -1,17 +1,13 @@
-import {
-  executeQuery,
-  getProdDbConfig,
-  updateRedis,
-} from "../../db.js";
+import { executeQuery, updateRedis, } from "../../db.js";
 import { logCyan } from "../../src/functions/logsCustom.js";
 import { crearTablaAsignaciones } from "../functions/crearTablaAsignaciones.js";
 import { crearUsuario } from "../functions/crearUsuario.js";
 import { insertAsignacionesDB } from "../functions/insertAsignacionesDB.js";
-import mysql2 from "mysql2";
 import CustomException from "../../classes/custom_exception.js";
 import { getShipmentIdFromQr } from "../../src/functions/getShipmentIdFromQr.js";
 
 export async function verificacionDeAsignacion(
+  dbConnection,
   company,
   userId,
   profile,
@@ -19,10 +15,6 @@ export async function verificacionDeAsignacion(
   driverId,
   deviceFrom
 ) {
-  const dbConfig = getProdDbConfig(company);
-  const dbConnection = mysql2.createConnection(dbConfig);
-  dbConnection.connect();
-
   const shipmentId = await getShipmentIdFromQr(company.did, dataQr)
 
   let hoy = new Date();
@@ -40,7 +32,6 @@ export async function verificacionDeAsignacion(
   const envios = await executeQuery(dbConnection, sql, []);
 
   if (envios.length === 0) {
-    dbConnection.end();
     throw new CustomException({
       title: "No se encontró el paquete",
       message: "El paquete no existe o ha sido eliminado.",
@@ -100,7 +91,6 @@ export async function verificacionDeAsignacion(
         1,
         deviceFrom,
       ]);
-      dbConnection.end();
       throw new CustomException({
         title: "Asignación Error",
         message: "Este paquete ya fue asignado a otro cadete",
@@ -118,7 +108,6 @@ export async function verificacionDeAsignacion(
         2,
         deviceFrom,
       ]);
-      dbConnection.end();
       throw new CustomException({
         title: "Asignación Error",
         message: "Este paquete ya fue auto asignado por otro cadete",
@@ -135,7 +124,6 @@ export async function verificacionDeAsignacion(
         3,
         deviceFrom,
       ]);
-      dbConnection.end();
       throw new CustomException({
         title: "Asignación Error",
         message: "Este paquete ya fue confirmado a otro cadete",
@@ -197,7 +185,6 @@ export async function verificacionDeAsignacion(
   }
 
   if (noCumple) {
-    dbConnection.end();
     throw new CustomException({
       title: "Asignación Error",
       message: message,
@@ -216,7 +203,6 @@ export async function verificacionDeAsignacion(
     await updateRedis(company.did, shipmentId, driverId);
     logCyan("Actualizo Redis con la asignación");
 
-    dbConnection.end();
     return { success: true, message };
   }
 }
@@ -271,9 +257,7 @@ async function asignar(dbConnection, company, userId, driverId, deviceFrom, ship
   return resultado;
 }
 
-export async function desasignar(startTime, company, userId, body, deviceFrom) {
-  const dbConfig = getProdDbConfig(company);
-  const dbConnection = await mysql2.createConnection(dbConfig);
+export async function desasignar(dbConnection, company, userId, body, deviceFrom) {
 
   const dataQr = body.dataQr;
 
@@ -302,7 +286,6 @@ export async function desasignar(startTime, company, userId, body, deviceFrom) {
   logCyan("El paquete está asignado");
 
   if (!shipmentId) {
-    dbConnection.end();
     throw new CustomException({
       title: "No se pudo obtener el id del envío.",
       message: "El QR no contiene un id de envío válido."
@@ -368,6 +351,5 @@ export async function desasignar(startTime, company, userId, body, deviceFrom) {
     message: "desasignación realizada correctamente",
   };
 
-  dbConnection.end();
   return resultado;
 }

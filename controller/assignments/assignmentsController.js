@@ -13,15 +13,13 @@ import { getShipmentIdFromQr } from "../../src/functions/getShipmentIdFromQr.js"
 import { checkIfFulfillment } from "../../src/functions/checkIfFulfillment.js";
 
 export async function asignar(
+  dbConnection,
   company,
   userId,
   body,
   driverId,
   deviceFrom
 ) {
-  const dbConfig = getProdDbConfig(company);
-  const dbConnection = mysql2.createConnection(dbConfig);
-  dbConnection.connect();
 
   const dataQr = body.dataQr;
 
@@ -36,7 +34,6 @@ export async function asignar(
   ]);
 
   if (asignadoRows.length > 0) {
-    dbConnection.end();
     return {
       feature: "asignacion",
       success: false,
@@ -52,7 +49,6 @@ export async function asignar(
   logCyan("Obtengo el estado del paquete");
 
   if (estadoRows.length === 0) {
-    dbConnection.end();
     return {
       feature: "asignacion",
       success: false,
@@ -132,9 +128,7 @@ export async function asignar(
     message: "Asignación realizada correctamente",
   };
 
-  dbConnection.end();
   return resultado;
-
 }
 
 export async function desasignar(company, userId, body, deviceFrom) {
@@ -153,7 +147,6 @@ export async function desasignar(company, userId, body, deviceFrom) {
   const operador = result.length > 0 ? result[0].operador : 0;
 
   if (operador == 0) {
-    dbConnection.end();
     return {
       feature: "asignacion",
       success: false,
@@ -163,7 +156,6 @@ export async function desasignar(company, userId, body, deviceFrom) {
   logCyan("El paquete está asignado");
 
   if (!shipmentId) {
-    dbConnection.end();
 
     return {
       feature: "asignacion",
@@ -231,6 +223,5 @@ export async function desasignar(company, userId, body, deviceFrom) {
     message: "Desasignación realizada correctamente",
   };
 
-  dbConnection.end();
   return resultado;
 }
