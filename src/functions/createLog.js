@@ -14,21 +14,21 @@ export async function crearLog(
   exito
 ) {
   try {
-    const sqlLog = `INSERT INTO logs_v2 (empresa, usuario, perfil, body, tiempo, resultado, tipo, metodo, exito) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    // const sqlLog = `INSERT INTO logs_v2 (empresa, usuario, perfil, body, tiempo, resultado, tipo, metodo, exito) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-    const values = [
-      empresa,
-      usuario,
-      perfil,
-      JSON.stringify(body),
-      tiempo,
-      JSON.stringify(resultado),
-      tipo,
-      metodo,
-      exito,
-    ];
+    // const values = [
+    //   empresa,
+    //   usuario,
+    //   perfil,
+    //   JSON.stringify(body),
+    //   tiempo,
+    //   JSON.stringify(resultado),
+    //   tipo,
+    //   metodo,
+    //   exito,
+    // ];
 
-    await executeQuery(dbConnection, sqlLog, values);
+    // await executeQuery(dbConnection, sqlLog, values);
     logGreen(`Log creado: ${JSON.stringify(values)}`);
   } catch (error) {
     logRed(`Error en crearLog: ${error.stack}`);
