@@ -27,7 +27,7 @@ export async function crearLog(
       exito,
     ];
 
-    await executeQueryFromPool(sqlLog, values, true);
+    await executeQueryFromPool(sqlLog, values);
     logGreen(`Log creado: ${JSON.stringify(values)}`);
   } catch (error) {
     logRed(`Error en crearLog: ${error.stack}`);
