@@ -6,7 +6,9 @@ import {
 import { verifyParameters } from "../src/functions/verifyParameters.js";
 import { getCompanyById } from "../db.js";
 import { verificacionDeAsignacion } from "../controller/assignmentsProCourrier/assignmentsProcourrierController.js";
-import { logPurple, logYellow } from "../src/functions/logsCustom.js";
+import { logPurple, logRed, logYellow } from "../src/functions/logsCustom.js";
+import { crearLog } from "../src/functions/createLog.js";
+import CustomException from "../classes/custom_exception.js";
 
 const asignaciones = Router();
 
@@ -54,10 +56,18 @@ asignaciones.post("/asignar", async (req, res) => {
       );
     }
 
-
+    crearLog(companyId, userId, profile, req.body, performance.now() - startTime, JSON.stringify(result), "/asignar", "api", true);
     res.status(200).json(result);
   } catch (error) {
-    res.status(500).json({ message: error.stack });
+    if (error instanceof CustomException) {
+      logRed(`Error 400 en asignaciones: ${error} `);
+      crearLog(companyId, userId, profile, req.body, performance.now() - startTime, JSON.stringify(error), "/asignar", "api", false);
+      res.status(400).json(error);
+    } else {
+      logRed(`Error 500 en asignaciones: ${error} `);
+      crearLog(companyId, userId, profile, req.body, performance.now() - startTime, JSON.stringify(error), "/asignar", "api", false);
+      res.status(500).json({ title: 'Error interno del servidor', message: 'Unhandled Error', stack: error.stack });
+    }
   } finally {
     logPurple(`Tiempo de ejecución: ${performance.now() - startTime} ms`);
   }
@@ -71,7 +81,7 @@ asignaciones.post("/desasignar", async (req, res) => {
     return res.status(400).json({ message: errorMessage });
   }
 
-  const { companyId, userId, deviceFrom } = req.body;
+  const { companyId, userId, profile, deviceFrom } = req.body;
 
   if (companyId == 12 && userId == 49) {
     return res.status(200).json({ message: "Comunicarse con la logística." });
@@ -84,13 +94,21 @@ asignaciones.post("/desasignar", async (req, res) => {
       company,
       userId,
       req.body,
-      deviceFrom,
-      startTime
+      deviceFrom
     );
 
+    crearLog(companyId, userId, profile, req.body, performance.now() - startTime, JSON.stringify(result), "/desasignar", "api", true);
     res.status(200).json(result);
   } catch (error) {
-    res.status(500).json({ message: error.stack });
+    if (error instanceof CustomException) {
+      logRed(`Error 400 en asignaciones: ${error} `);
+      crearLog(companyId, userId, profile, req.body, performance.now() - startTime, JSON.stringify(error), "/desasignar", "api", false);
+      res.status(400).json(error);
+    } else {
+      logRed(`Error 500 en asignaciones: ${error} `);
+      crearLog(companyId, userId, profile, req.body, performance.now() - startTime, JSON.stringify(error), "/desasignar", "api", false);
+      res.status(500).json({ title: 'Error interno del servidor', message: 'Unhandled Error', stack: error.stack });
+    }
   } finally {
     logPurple(`Tiempo de ejecución: ${performance.now() - startTime} ms`);
   }

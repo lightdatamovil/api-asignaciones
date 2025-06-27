@@ -1,6 +1,6 @@
-import { executeQuery } from '../../db.js';
+import { executeQueryFromPool } from '../../db.js';
 import { logRed } from '../../src/functions/logsCustom.js';
-export async function crearTablaAsignaciones(dbConnectionLocal, companyId) {
+export async function crearTablaAsignaciones(companyId) {
 
     try {
         const createTableSql = `
@@ -21,7 +21,7 @@ export async function crearTablaAsignaciones(dbConnectionLocal, companyId) {
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
         `;
 
-        await executeQuery(dbConnectionLocal, createTableSql);
+        await executeQueryFromPool(createTableSql);
     } catch (error) {
         logRed(`Error al crear la tabla de asignaciones:  ${error.stack}`)
 

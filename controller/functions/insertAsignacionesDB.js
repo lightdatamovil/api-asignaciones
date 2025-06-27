@@ -1,8 +1,8 @@
-import { executeQuery } from "../../db.js";
+import { executeQueryFromPool } from "../../db.js";
 
 import { logRed } from "../../src/functions/logsCustom.js";
 
-export async function insertAsignacionesDB(dbConnectionLocal,
+export async function insertAsignacionesDB(
   companyId,
   shipmentId,
   driverId,
@@ -13,16 +13,16 @@ export async function insertAsignacionesDB(dbConnectionLocal,
 
   try {
     const checkSql = `SELECT id FROM asignaciones_${companyId} WHERE didenvio = ? AND superado = 0`;
-    const existingRecords = await executeQuery(dbConnectionLocal, checkSql, [
+    const existingRecords = await executeQueryFromPool(checkSql, [
       shipmentId,
     ]);
 
     if (existingRecords.length > 0) {
       const updateSql = `UPDATE asignaciones_${companyId} SET superado = 1 WHERE id = ?`;
-      await executeQuery(dbConnectionLocal, updateSql, [existingRecords[0].id]);
+      await executeQueryFromPool(updateSql, [existingRecords[0].id]);
 
       const insertSql = `INSERT INTO asignaciones_${companyId} (didenvio, chofer, estado, quien, desde) VALUES (?, ?, ?, ?, ?)`;
-      await executeQuery(dbConnectionLocal, insertSql, [
+      await executeQueryFromPool(insertSql, [
         shipmentId,
         driverId,
         shipmentState,
@@ -31,7 +31,7 @@ export async function insertAsignacionesDB(dbConnectionLocal,
       ]);
     } else {
       const insertSql = `INSERT INTO asignaciones_${companyId} (didenvio, chofer, estado, quien, desde) VALUES (?, ?, ?, ?, ?)`;
-      await executeQuery(dbConnectionLocal, insertSql, [
+      await executeQueryFromPool(insertSql, [
         shipmentId,
         driverId,
         shipmentState,

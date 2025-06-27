@@ -1,6 +1,5 @@
 import {
   executeQuery,
-  getDbConfig,
   getProdDbConfig,
   updateRedis,
 } from "../../db.js";
@@ -10,58 +9,35 @@ import { crearTablaAsignaciones } from "../functions/crearTablaAsignaciones.js";
 import { crearUsuario } from "../functions/crearUsuario.js";
 import { insertAsignacionesDB } from "../functions/insertAsignacionesDB.js";
 import mysql from "mysql";
-import { crearLog } from "../../src/functions/createLog.js";
-import axios from "axios";
+import CustomException from "../../classes/custom_exception.js";
+import { getShipmentIdFromQr } from "../../src/functions/getShipmentIdFromQr.js";
 
-export async function getShipmentIdFromQr(companyId, dataQr) {
 
-  try {
-    const payload = {
-      companyId: Number(companyId),
-      userId: 0,
-      profile: 0,
-      deviceId: "null",
-      brand: "null",
-      model: "null",
-      androidVersion: "null",
-      deviceFrom: "getShipmentIdFromQr de Asignacion API",
-      appVersion: "null",
-      dataQr: dataQr
-    };
-
-    const result = await axios.post('https://apimovil2.lightdata.app/api/qr/get-shipment-id', payload);
-    if (result.status == 200) {
-      return result.data.body;
-    } else {
-      logRed("Error al obtener el shipmentId");
-      throw new Error("Error al obtener el shipmentId");
-    }
-  } catch (error) {
-    logRed(`Error al obtener el shipmentId: ${error.stack}`);
-    throw error;
-  }
-}
 
 export async function asignar(
   company,
   userId,
   body,
   driverId,
-  deviceFrom,
-  startTime
+  deviceFrom
 ) {
   const dbConfig = getProdDbConfig(company);
   const dbConnection = mysql.createConnection(dbConfig);
   dbConnection.connect();
 
-  const dbConfigLocal = getDbConfig();
-  const dbConnectionLocal = mysql.createConnection(dbConfigLocal);
-  dbConnectionLocal.connect();
-
   try {
     const dataQr = body.dataQr;
 
     const shipmentId = await getShipmentIdFromQr(company.did, dataQr);
+
+    const checkIfFFA = `SELECT elim FROM envios WHERE superado=0 AND elim=52 AND did = ?`;
+    const ffaRows = await executeQuery(dbConnection, checkIfFFA, [shipmentId]);
+    if (ffaRows.length > 0) {
+      throw new CustomException({
+        title: "Fulfillment Error",
+        message: "El paquete todavia no esta armado, espera a terminar el proceso y vuelva a intentarlo.",
+      });
+    }
 
     const sqlAsignado = `SELECT id, estado FROM envios_asignaciones WHERE superado=0 AND elim=0 AND didEnvio = ? AND operador = ?`;
     const asignadoRows = await executeQuery(dbConnection, sqlAsignado, [
@@ -70,23 +46,10 @@ export async function asignar(
     ]);
 
     if (asignadoRows.length > 0) {
-      crearLog(
-        dbConnectionLocal,
-        company.did,
-        userId,
-        body.profile,
-        body,
-        (performance.now() - startTime).toFixed(2),
-        "El paquete ya se encuentra asignado a este chofer.",
-        "asignar",
-        "api",
-        true
-      );
-      return {
-        feature: "asignacion",
-        success: false,
+      throw new CustomException({
+        title: "Asignación Error",
         message: "El paquete ya se encuentra asignado a este chofer.",
-      };
+      });
     }
     logCyan("El paquete todavia no está asignado");
 
@@ -102,10 +65,10 @@ export async function asignar(
 
     const estado = estadoRows[0].estado;
 
-    await crearTablaAsignaciones(dbConnectionLocal, company.did);
+    await crearTablaAsignaciones(company.did);
     logCyan("Creo la tabla de asignaciones");
 
-    await crearUsuario(dbConnectionLocal, company.did);
+    await crearUsuario(company.did);
     logCyan("Creo el usuario");
 
     const insertSql = `INSERT INTO envios_asignaciones (did, operador, didEnvio, estado, quien, desde) VALUES (?, ?, ?, ?, ?, ?)`;
@@ -153,7 +116,7 @@ export async function asignar(
     }
     logCyan("Updateo las tablas");
 
-    await insertAsignacionesDB(dbConnectionLocal,
+    await insertAsignacionesDB(
       company.did,
       did,
       driverId,
@@ -172,36 +135,9 @@ export async function asignar(
       message: "Asignación realizada correctamente",
     };
 
-    const sendDuration = performance.now() - startTime;
-
-    crearLog(
-      dbConnectionLocal,
-      company.did,
-      userId,
-      body.profile,
-      body,
-      sendDuration.toFixed(2),
-      JSON.stringify(resultado),
-      "asignar",
-      "api",
-      true
-    );
 
     return resultado;
   } catch (error) {
-    const sendDuration = performance.now() - startTime;
-    crearLog(
-      dbConnectionLocal,
-      company.did,
-      userId,
-      body.profile,
-      body,
-      sendDuration.toFixed(2),
-      error.stack,
-      "asignar",
-      "api",
-      false
-    );
     logRed(`Error al asignar paquete:  ${error.stack}`);
     throw error;
   } finally {
@@ -209,14 +145,10 @@ export async function asignar(
   }
 }
 
-export async function desasignar(company, userId, body, deviceFrom, startTime) {
+export async function desasignar(company, userId, body, deviceFrom) {
   const dbConfig = getProdDbConfig(company);
   const dbConnection = mysql.createConnection(dbConfig);
   dbConnection.connect();
-
-  const dbConfigLocal = getDbConfig();
-  const dbConnectionLocal = mysql.createConnection(dbConfigLocal);
-  dbConnectionLocal.connect();
 
   try {
     const dataQr = body.dataQr;
@@ -230,23 +162,10 @@ export async function desasignar(company, userId, body, deviceFrom, startTime) {
     const operador = result.length > 0 ? result[0].operador : 0;
 
     if (operador == 0) {
-      crearLog(
-        dbConnectionLocal,
-        company.did,
-        userId,
-        body.profile,
-        body,
-        (performance.now() - startTime).toFixed(2),
-        "El paquete ya está desasignado",
-        "desasignar",
-        "api",
-        true
-      );
-      return {
-        feature: "asignacion",
-        success: false,
-        message: "El paquete ya está desasignado",
-      };
+      throw new CustomException({
+        title: "Desasignación Error",
+        message: "El paquete ya está desasignado.",
+      });
     }
     logCyan("El paquete está asignado");
 
@@ -294,7 +213,7 @@ export async function desasignar(company, userId, body, deviceFrom, startTime) {
 
     logCyan("Updateo las tablas");
 
-    await insertAsignacionesDB(dbConnectionLocal,
+    await insertAsignacionesDB(
       company.did,
       shipmentId,
       0,
@@ -313,36 +232,8 @@ export async function desasignar(company, userId, body, deviceFrom, startTime) {
       message: "Desasignación realizada correctamente",
     };
 
-    const sendDuration = performance.now() - startTime;
-
-    crearLog(
-      dbConnectionLocal,
-      company.did,
-      userId,
-      body.profile,
-      body,
-      sendDuration.toFixed(2),
-      JSON.stringify(resultado),
-      "desasignar",
-      "api",
-      true
-    );
-
     return resultado;
   } catch (error) {
-    const sendDuration = performance.now() - startTime;
-    crearLog(
-      dbConnectionLocal,
-      company.did,
-      userId,
-      body.profile,
-      body,
-      sendDuration.toFixed(2),
-      error.stack,
-      "desasignar",
-      "api",
-      false
-    );
     logRed(`Error al desasignar paquete:  ${error.stack}`);
     throw error;
   } finally {

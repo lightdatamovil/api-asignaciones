@@ -1,7 +1,7 @@
-import { executeQuery } from '../../db.js';
+import { executeQueryFromPool } from '../../db.js';
 import { logRed } from '../../src/functions/logsCustom.js';
 
-export async function crearUsuario(dbConnectionLocal, companyId) {
+export async function crearUsuario(companyId) {
     try {
         const username = `usuario_${companyId}`;
         const password = '78451296';
@@ -9,8 +9,8 @@ export async function crearUsuario(dbConnectionLocal, companyId) {
         const createUserSql = `CREATE USER IF NOT EXISTS ?@'%' IDENTIFIED BY ?`;
         const grantPrivilegesSql = `GRANT ALL PRIVILEGES ON \`asigna_data\`.* TO ?@'%'`;
 
-        await executeQuery(dbConnectionLocal, createUserSql, [username, password]);
-        await executeQuery(dbConnectionLocal, grantPrivilegesSql, [username]);
+        await executeQueryFromPool(createUserSql, [username, password]);
+        await executeQueryFromPool(grantPrivilegesSql, [username]);
 
         return;
     } catch (error) {

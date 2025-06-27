@@ -1,18 +1,17 @@
 import {
   executeQuery,
-  getDbConfig,
   getProdDbConfig,
   updateRedis,
 } from "../../db.js";
 import mysql from "mysql";
-import { idFromFlexShipment } from "../functions/idFromFlexShipment.js";
-import { idFromNoFlexShipment } from "../functions/idFromNoFlexShipment.js";
 import { crearLog } from "../../src/functions/createLog.js";
 import { logCyan, logRed } from "../../src/functions/logsCustom.js";
 import { crearTablaAsignaciones } from "../functions/crearTablaAsignaciones.js";
 import { crearUsuario } from "../functions/crearUsuario.js";
 import { insertAsignacionesDB } from "../functions/insertAsignacionesDB.js";
 import mysql2 from "mysql2/promise";
+import CustomException from "../../classes/custom_exception.js";
+import { getShipmentIdFromQr } from "../../src/functions/getShipmentIdFromQr.js";
 
 export async function verificacionDeAsignacion(
   company,
@@ -20,21 +19,15 @@ export async function verificacionDeAsignacion(
   profile,
   dataQr,
   driverId,
-  deviceFrom,
-  body
+  deviceFrom
 ) {
-  const startTime = performance.now();
   const dbConfig = getProdDbConfig(company);
   const dbConnection = mysql.createConnection(dbConfig);
   dbConnection.connect();
 
-  const dbConfigLocal = getDbConfig(company, true);
-  const dbConnectionLocal = mysql.createConnection(dbConfigLocal);
-  dbConnectionLocal.connect();
-
   try {
 
-    const shipmentId = await idFromNoFlexShipment(company, dataQr)
+    const shipmentId = await getShipmentIdFromQr(company.did, dataQr)
 
     let hoy = new Date();
     hoy.setDate(hoy.getDate() - 3);
@@ -51,19 +44,10 @@ export async function verificacionDeAsignacion(
     const envios = await executeQuery(dbConnection, sql, []);
 
     if (envios.length === 0) {
-      crearLog(
-        dbConnectionLocal,
-        company.did,
-        userId,
-        profile,
-        body,
-        performance.now() - startTime,
-        "No se encontró el paquete.",
-        "asignar-procourrier",
-        "api",
-        1
-      );
-      return { success: false, message: "No se encontró el paquete." };
+      throw new CustomException({
+        title: "No se encontró el paquete",
+        message: "El paquete no existe o ha sido eliminado.",
+      });
     }
     logCyan("Obtengo el envío");
 
@@ -119,23 +103,10 @@ export async function verificacionDeAsignacion(
           1,
           deviceFrom,
         ]);
-
-        crearLog(
-          dbConnectionLocal,
-          company.did,
-          userId,
-          profile,
-          body,
-          performance.now() - startTime,
-          "Este paquete ya fue asignado a otro cadete",
-          "asignar-procourrier",
-          "api",
-          1
-        );
-        return {
-          estadoRespuesta: false,
-          mensaje: "Este paquete ya fue asignado a otro cadete",
-        };
+        throw new CustomException({
+          title: "Asignación Error",
+          message: "Este paquete ya fue asignado a otro cadete",
+        });
       }
       if (profile === 3 && [2, 3].includes(estadoAsignacion)) {
         logCyan("Es perfil 3 y estadoAsignacion 2");
@@ -149,23 +120,10 @@ export async function verificacionDeAsignacion(
           2,
           deviceFrom,
         ]);
-
-        crearLog(
-          dbConnectionLocal,
-          company.did,
-          userId,
-          profile,
-          body,
-          performance.now() - startTime,
-          "Este paquete ya fue auto asignado por otro cadete.",
-          "asignar-procourrier",
-          "api",
-          1
-        );
-        return {
-          estadoRespuesta: false,
-          mensaje: "Este paquete ya fue auto asignado por otro cadete",
-        };
+        throw new CustomException({
+          title: "Asignación Error",
+          message: "Este paquete ya fue auto asignado por otro cadete",
+        });
       }
       if (profile === 5 && [1, 3, 4, 5].includes(estadoAsignacion)) {
         logCyan("Es perfil 5 y estadoAsignacion 1, 3, 4 o 5");
@@ -178,24 +136,10 @@ export async function verificacionDeAsignacion(
           3,
           deviceFrom,
         ]);
-
-        crearLog(
-          dbConnectionLocal,
-          company.did,
-          userId,
-          profile,
-          body,
-          performance.now() - startTime,
-          "Este paquete esta asignado a otro cadete.",
-          "asignar-procourrier",
-          "api",
-          1
-        );
-
-        return {
-          estadoRespuesta: false,
-          mensaje: "Este paquete esta asignado a otro cadete",
-        };
+        throw new CustomException({
+          title: "Asignación Error",
+          message: "Este paquete ya fue confirmado a otro cadete",
+        });
       }
     }
 
@@ -253,31 +197,18 @@ export async function verificacionDeAsignacion(
     }
 
     if (noCumple) {
-      crearLog(
-        dbConnectionLocal,
-        company.did,
-        userId,
-        profile,
-        body,
-        performance.now() - startTime,
-        { success: false, message },
-        "asignar-procourrier",
-        "api",
-        1
-      );
-      return { success: false, message: message };
+      throw new CustomException({
+        title: "Asignación Error",
+        message: message,
+      });
     } else {
       await asignar(
-        startTime,
         dbConnection,
-        dbConnectionLocal,
         company,
         userId,
         driverId,
         deviceFrom,
-        shipmentId,
-        body,
-        profile
+        shipmentId
       );
       logCyan("Asignado correctamente");
 
@@ -287,27 +218,14 @@ export async function verificacionDeAsignacion(
       return { success: true, message };
     }
   } catch (error) {
-    crearLog(
-      dbConnectionLocal,
-      company.did,
-      userId,
-      profile,
-      body,
-      performance.now() - startTime,
-      error,
-      "asignar-procourrier",
-      "api",
-      1
-    );
     console.error("Error al verificar la asignación:", error);
     throw error;
   } finally {
     dbConnection.end();
-    dbConnectionLocal.end();
   }
 }
 
-async function asignar(startTime, dbConnection, dbConnectionLocal, company, userId, driverId, deviceFrom, shipmentId, body, profile) {
+async function asignar(dbConnection, company, userId, driverId, deviceFrom, shipmentId) {
 
   const estadoQuery = `SELECT estado FROM envios_historial WHERE superado=0 AND elim=0 AND didEnvio = ?`;
   const estadoRows = await executeQuery(dbConnection, estadoQuery, [shipmentId]);
@@ -319,10 +237,10 @@ async function asignar(startTime, dbConnection, dbConnectionLocal, company, user
 
   const estado = estadoRows[0].estado;
 
-  await crearTablaAsignaciones(dbConnectionLocal, company.did);
+  await crearTablaAsignaciones(company.did);
   logCyan("Creo la tabla de asignaciones");
 
-  await crearUsuario(dbConnectionLocal, company.did);
+  await crearUsuario(company.did);
   logCyan("Creo la tabla de usuarios");
 
   const insertSql = `INSERT INTO envios_asignaciones (did, operador, didEnvio, estado, quien, desde) VALUES (?, ?, ?, ?, ?, ?)`;
@@ -344,24 +262,12 @@ async function asignar(startTime, dbConnection, dbConnectionLocal, company, user
   }
   logCyan("Updateo las tablas");
 
-  await insertAsignacionesDB(dbConnectionLocal, company.did, did, driverId, estado, userId, deviceFrom);
+  await insertAsignacionesDB(company.did, did, driverId, estado, userId, deviceFrom);
   logCyan("Inserto en la base de datos individual de asignaciones");
   const resultado = {
     success: true,
     message: "Asignación realizada correctamente",
   };
-  crearLog(
-    dbConnectionLocal,
-    company.did,
-    userId,
-    profile,
-    body,
-    performance.now() - startTime,
-    resultado,
-    "asignar-procourrier",
-    "api",
-    1
-  );
 
   return resultado;
 }
@@ -369,9 +275,6 @@ async function asignar(startTime, dbConnection, dbConnectionLocal, company, user
 export async function desasignar(startTime, company, userId, body, deviceFrom) {
   const dbConfig = getProdDbConfig(company);
   const dbConnection = await mysql2.createConnection(dbConfig);
-
-  const dbConfigLocal = getDbConfig();
-  const dbConnectionLocal = await mysql2.createConnection(dbConfigLocal);
 
   try {
     const dataQr = body.dataQr;
@@ -384,9 +287,7 @@ export async function desasignar(startTime, company, userId, body, deviceFrom) {
       logCyan("No es Flex");
     }
 
-    const shipmentId = isFlex
-      ? await idFromFlexShipment(dataQr.id, dbConnection)
-      : await idFromNoFlexShipment(company, dataQr, dbConnection);
+    const shipmentId = await getShipmentIdFromQr(company.did, dataQr);
 
     const sqlOperador =
       "SELECT operador FROM envios_asignaciones WHERE didEnvio = ? AND superado = 0 AND elim = 0";
@@ -450,8 +351,7 @@ export async function desasignar(startTime, company, userId, body, deviceFrom) {
     await updateRedis(company.did, shipmentId, 0);
     logCyan("Updateo redis con la desasignación");
 
-    await insertAsignacionesDB(dbConnectionLocal,
-      dbConnectionLocal,
+    await insertAsignacionesDB(
       company.did,
       shipmentId,
       0,
@@ -468,7 +368,6 @@ export async function desasignar(startTime, company, userId, body, deviceFrom) {
       message: "desasignación realizada correctamente",
     };
     crearLog(
-      dbConnectionLocal,
       company.did,
       body.userId,
       body.profile,
@@ -487,7 +386,6 @@ export async function desasignar(startTime, company, userId, body, deviceFrom) {
     logRed(`Error al desasignar paquete:  ${error.stack}`);
 
     crearLog(
-      dbConnectionLocal,
       company.did,
       userId,
       body.profile,
@@ -502,6 +400,5 @@ export async function desasignar(startTime, company, userId, body, deviceFrom) {
     throw error;
   } finally {
     dbConnection.end();
-    dbConnectionLocal.end();
   }
 }
