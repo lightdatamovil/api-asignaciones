@@ -51,18 +51,18 @@ export async function verificacionDeAsignacion(
     const envios = await executeQuery(dbConnection, sql, []);
 
     if (envios.length === 0) {
-      // crearLog(
-      //   dbConnectionLocal,
-      //   company.did,
-      //   userId,
-      //   profile,
-      //   body,
-      //   performance.now() - startTime,
-      //   "No se encontró el paquete.",
-      //   "asignar-procourrier",
-      //   "api",
-      //   1
-      // );
+      crearLog(
+        dbConnectionLocal,
+        company.did,
+        userId,
+        profile,
+        body,
+        0,
+        "No se encontró el paquete.",
+        "asignar-procourrier",
+        "api",
+        1
+      );
       return { success: false, message: "No se encontró el paquete." };
     }
     logCyan("Obtengo el envío");
@@ -120,18 +120,18 @@ export async function verificacionDeAsignacion(
           deviceFrom,
         ]);
 
-        // crearLog(
-        //   dbConnectionLocal,
-        //   company.did,
-        //   userId,
-        //   profile,
-        //   body,
-        //   performance.now() - startTime,
-        //   "Este paquete ya fue asignado a otro cadete",
-        //   "asignar-procourrier",
-        //   "api",
-        //   1
-        // );
+        crearLog(
+          dbConnectionLocal,
+          company.did,
+          userId,
+          profile,
+          body,
+          0,
+          "Este paquete ya fue asignado a otro cadete",
+          "asignar-procourrier",
+          "api",
+          1
+        );
         return {
           estadoRespuesta: false,
           mensaje: "Este paquete ya fue asignado a otro cadete",
@@ -150,18 +150,18 @@ export async function verificacionDeAsignacion(
           deviceFrom,
         ]);
 
-        // crearLog(
-        //   dbConnectionLocal,
-        //   company.did,
-        //   userId,
-        //   profile,
-        //   body,
-        //   performance.now() - startTime,
-        //   "Este paquete ya fue auto asignado por otro cadete.",
-        //   "asignar-procourrier",
-        //   "api",
-        //   1
-        // );
+        crearLog(
+          dbConnectionLocal,
+          company.did,
+          userId,
+          profile,
+          body,
+          0,
+          "Este paquete ya fue auto asignado por otro cadete.",
+          "asignar-procourrier",
+          "api",
+          1
+        );
         return {
           estadoRespuesta: false,
           mensaje: "Este paquete ya fue auto asignado por otro cadete",
@@ -179,18 +179,18 @@ export async function verificacionDeAsignacion(
           deviceFrom,
         ]);
 
-        // crearLog(
-        //   dbConnectionLocal,
-        //   company.did,
-        //   userId,
-        //   profile,
-        //   body,
-        //   performance.now() - startTime,
-        //   "Este paquete esta asignado a otro cadete.",
-        //   "asignar-procourrier",
-        //   "api",
-        //   1
-        // );
+        crearLog(
+          dbConnectionLocal,
+          company.did,
+          userId,
+          profile,
+          body,
+          0,
+          "Este paquete esta asignado a otro cadete.",
+          "asignar-procourrier",
+          "api",
+          1
+        );
 
         return {
           estadoRespuesta: false,
@@ -253,18 +253,18 @@ export async function verificacionDeAsignacion(
     }
 
     if (noCumple) {
-      // crearLog(
-      //   dbConnectionLocal,
-      //   company.did,
-      //   userId,
-      //   profile,
-      //   body,
-      //   performance.now() - startTime,
-      //   { success: false, message },
-      //   "asignar-procourrier",
-      //   "api",
-      //   1
-      // );
+      crearLog(
+        dbConnectionLocal,
+        company.did,
+        userId,
+        profile,
+        body,
+        0,
+        { success: false, message },
+        "asignar-procourrier",
+        "api",
+        1
+      );
       return { success: false, message: message };
     } else {
       await asignar(
@@ -286,18 +286,18 @@ export async function verificacionDeAsignacion(
       return { success: true, message };
     }
   } catch (error) {
-    // crearLog(
-    //   dbConnectionLocal,
-    //   company.did,
-    //   userId,
-    //   profile,
-    //   body,
-    //   performance.now() - startTime,
-    //   error,
-    //   "asignar-procourrier",
-    //   "api",
-    //   1
-    // );
+    crearLog(
+      dbConnectionLocal,
+      company.did,
+      userId,
+      profile,
+      body,
+      0,
+      error,
+      "asignar-procourrier",
+      "api",
+      1
+    );
     console.error("Error al verificar la asignación:", error);
     throw error;
   } finally {
@@ -349,18 +349,18 @@ async function asignar(dbConnection, dbConnectionLocal, company, userId, driverI
     success: true,
     message: "Asignación realizada correctamente",
   };
-  // crearLog(
-  //   dbConnectionLocal,
-  //   company.did,
-  //   userId,
-  //   profile,
-  //   body,
-  //   performance.now() - startTime,
-  //   resultado,
-  //   "asignar-procourrier",
-  //   "api",
-  //   1
-  // );
+  crearLog(
+    dbConnectionLocal,
+    company.did,
+    userId,
+    profile,
+    body,
+    0,
+    resultado,
+    "asignar-procourrier",
+    "api",
+    1
+  );
 
   return resultado;
 }
@@ -466,18 +466,18 @@ export async function desasignar(company, userId, body, deviceFrom) {
       success: true,
       message: "desasignación realizada correctamente",
     };
-    // crearLog(
-    //   dbConnectionLocal,
-    //   company.did,
-    //   body.userId,
-    //   body.profile,
-    //   body,
-    //   sendDuration.toFixed(2),
-    //   JSON.stringify(resultado),
-    //   "desasignar-Procourrier",
-    //   "api",
-    //   true
-    // );
+    crearLog(
+      dbConnectionLocal,
+      company.did,
+      body.userId,
+      body.profile,
+      body,
+      0,
+      JSON.stringify(resultado),
+      "desasignar-Procourrier",
+      "api",
+      true
+    );
 
     return resultado;
   } catch (error) {
@@ -485,18 +485,18 @@ export async function desasignar(company, userId, body, deviceFrom) {
 
     logRed(`Error al desasignar paquete:  ${error.stack}`);
 
-    // crearLog(
-    //   dbConnectionLocal,
-    //   company.did,
-    //   userId,
-    //   body.profile,
-    //   body,
-    //   sendDuration.toFixed(2),
-    //   error.stack,
-    //   "desasignar-procourrier",
-    //   "api",
-    //   false
-    // );
+    crearLog(
+      dbConnectionLocal,
+      company.did,
+      userId,
+      body.profile,
+      body,
+      0,
+      error.stack,
+      "desasignar-procourrier",
+      "api",
+      false
+    );
 
     throw error;
   } finally {
