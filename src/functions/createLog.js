@@ -29,7 +29,7 @@ export async function crearLog(
     // ];
 
     // await executeQuery(dbConnection, sqlLog, values);
-    logGreen(`Log creado: ${JSON.stringify(values)}`);
+    // logGreen(`Log creado: ${JSON.stringify(values)}`);
   } catch (error) {
     logRed(`Error en crearLog: ${error.stack}`);
     throw error;
