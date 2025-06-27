@@ -44,14 +44,15 @@ asignaciones.post("/asignar", async (req, res) => {
       );
     } else {
       logYellow(`Es la empresa ${company.empresa}, se procede a asignar`);
-      result = await asignar(
-        company,
-        userId,
-        req.body,
-        driverId,
-        deviceFrom,
-        startTime
-      );
+      result = ""
+      //  await asignar(
+      //   company,
+      //   userId,
+      //   req.body,
+      //   driverId,
+      //   deviceFrom,
+      //   startTime
+      // );
     }
 
 
