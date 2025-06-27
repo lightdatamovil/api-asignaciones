@@ -11,7 +11,7 @@ import { logPurple, logYellow } from "../src/functions/logsCustom.js";
 const asignaciones = Router();
 
 asignaciones.post("/asignar", async (req, res) => {
-  const startTime = performance.now();
+  // const startTime = performance.now();
   const errorMessage = verifyParameters(req.body, [
     "dataQr",
     "driverId",
@@ -50,7 +50,7 @@ asignaciones.post("/asignar", async (req, res) => {
         req.body,
         driverId,
         deviceFrom,
-        startTime
+        // startTime
       );
     }
 
@@ -59,12 +59,12 @@ asignaciones.post("/asignar", async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.stack });
   } finally {
-    logPurple(`Tiempo de ejecución: ${performance.now() - startTime} ms`);
+    // logPurple(`Tiempo de ejecución: ${performance.now() - startTime} ms`);
   }
 });
 
 asignaciones.post("/desasignar", async (req, res) => {
-  const startTime = performance.now();
+  // const startTime = performance.now();
   const errorMessage = verifyParameters(req.body, ["dataQr", "deviceFrom"]);
 
   if (errorMessage) {
@@ -85,14 +85,14 @@ asignaciones.post("/desasignar", async (req, res) => {
       userId,
       req.body,
       deviceFrom,
-      startTime
+      // startTime
     );
 
     res.status(200).json(result);
   } catch (error) {
     res.status(500).json({ message: error.stack });
   } finally {
-    logPurple(`Tiempo de ejecución: ${performance.now() - startTime} ms`);
+    // logPurple(`Tiempo de ejecución: ${performance.now() - startTime} ms`);
   }
 });
 
