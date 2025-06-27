@@ -6,7 +6,7 @@ import {
 import { verifyParameters } from "../src/functions/verifyParameters.js";
 import { getCompanyById } from "../db.js";
 import { verificacionDeAsignacion } from "../controller/assignmentsProCourrier/assignmentsProcourrierController.js";
-import { logPurple, logRed, logYellow } from "../src/functions/logsCustom.js";
+import { logPurple, logRed } from "../src/functions/logsCustom.js";
 import { crearLog } from "../src/functions/createLog.js";
 import CustomException from "../classes/custom_exception.js";
 
@@ -34,7 +34,6 @@ asignaciones.post("/asignar", async (req, res) => {
     const company = await getCompanyById(companyId);
     let result = null;
     if (company.did == 4) {
-      logYellow(`Es la empresa ProCourrier, se procede a verificar asignación`);
       result = await verificacionDeAsignacion(
         company,
         userId,
@@ -45,7 +44,6 @@ asignaciones.post("/asignar", async (req, res) => {
         req.body
       );
     } else {
-      logYellow(`Es la empresa ${company.empresa}, se procede a asignar`);
       result = await asignar(
         company,
         userId,
