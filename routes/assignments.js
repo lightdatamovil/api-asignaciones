@@ -27,7 +27,7 @@ asignaciones.post("/asignar", async (req, res) => {
   const { companyId, userId, dataQr, driverId, deviceFrom, profile } = req.body;
 
   if (companyId == 12 && userId == 49) {
-    return res.status(200).json({ message: "Comunicarse con la logística." });
+    return res.status(400).json({ message: "Comunicarse con la logística." });
   }
 
   try {
@@ -82,7 +82,7 @@ asignaciones.post("/desasignar", async (req, res) => {
   const { companyId, userId, profile, deviceFrom } = req.body;
 
   if (companyId == 12 && userId == 49) {
-    return res.status(200).json({ message: "Comunicarse con la logística." });
+    return res.status(400).json({ message: "Comunicarse con la logística." });
   }
 
   try {

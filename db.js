@@ -39,35 +39,30 @@ const poolLocal = mysql2.createPool({
 });
 
 export async function updateRedis(empresaId, envioId, choferId) {
-    try {
-        let DWRTE = await redisClient.get('DWRTE');
-        const empresaKey = `e.${empresaId}`;
-        const envioKey = `en.${envioId}`;
+    let DWRTE = await redisClient.get('DWRTE');
+    const empresaKey = `e.${empresaId}`;
+    const envioKey = `en.${envioId}`;
 
-        // Si no existe en Redis, inicializamos con un objeto vacío
-        if (!DWRTE) {
-            DWRTE = {};
-        } else {
-            DWRTE = JSON.parse(DWRTE); // Convertimos el string en objeto
-        }
-
-        // Si la empresa no existe, la creamos
-        if (!DWRTE[empresaKey]) {
-            DWRTE[empresaKey] = {};
-        }
-
-        // Solo agrega si el envío no existe
-        if (!DWRTE[empresaKey][envioKey]) {
-            DWRTE[empresaKey][envioKey] = {
-                choferId: choferId
-            };
-        }
-
-        await redisClient.set('DWRTE', JSON.stringify(DWRTE));
-    } catch (error) {
-        console.error("Error al actualizar Redis:", error);
-        throw error;
+    // Si no existe en Redis, inicializamos con un objeto vacío
+    if (!DWRTE) {
+        DWRTE = {};
+    } else {
+        DWRTE = JSON.parse(DWRTE); // Convertimos el string en objeto
     }
+
+    // Si la empresa no existe, la creamos
+    if (!DWRTE[empresaKey]) {
+        DWRTE[empresaKey] = {};
+    }
+
+    // Solo agrega si el envío no existe
+    if (!DWRTE[empresaKey][envioKey]) {
+        DWRTE[empresaKey][envioKey] = {
+            choferId: choferId
+        };
+    }
+
+    await redisClient.set('DWRTE', JSON.stringify(DWRTE));
 }
 
 let companiesList = [];
@@ -83,54 +78,33 @@ export function getProdDbConfig(company) {
 }
 
 async function loadCompaniesFromRedis() {
-    try {
-        const companiesListString = await redisClient.get('empresasData');
+    const companiesListString = await redisClient.get('empresasData');
 
-        companiesList = JSON.parse(companiesListString);
-
-    } catch (error) {
-        console.error("Error en loadCompaniesFromRedis:", error);
-        throw error;
-    }
+    companiesList = JSON.parse(companiesListString);
 }
 
 export async function getCompanyById(companyId) {
-    try {
-        let company = companiesList[companyId];
+    let company = companiesList[companyId];
 
-        if (company == undefined || Object.keys(companiesList).length === 0) {
-            try {
-                await loadCompaniesFromRedis();
+    if (company == undefined || Object.keys(companiesList).length === 0) {
+        await loadCompaniesFromRedis();
 
-                company = companiesList[companyId];
-            } catch (error) {
-                console.error("Error al cargar compañías desde Redis:", error);
-                throw error;
-            }
-        }
-
-        return company;
-    } catch (error) {
-        console.error("Error en getCompanyById:", error);
-        throw error;
+        company = companiesList[companyId];
     }
+
+    return company;
 }
 
 export async function executeQuery(connection, query, values) {
-    try {
-        return new Promise((resolve, reject) => {
-            connection.query(query, values, (err, results) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(results);
-                }
-            });
+    return new Promise((resolve, reject) => {
+        connection.query(query, values, (err, results) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(results);
+            }
         });
-    } catch (error) {
-        console.error("Error al ejecutar la query:", error);
-        throw error;
-    }
+    });
 }
 
 export function executeQueryFromPool(query, values = [], log = false) {
