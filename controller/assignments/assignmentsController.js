@@ -9,8 +9,8 @@ import { crearTablaAsignaciones } from "../functions/crearTablaAsignaciones.js";
 import { crearUsuario } from "../functions/crearUsuario.js";
 import { insertAsignacionesDB } from "../functions/insertAsignacionesDB.js";
 import mysql from "mysql";
-import CustomException from "../../classes/custom_exception.js";
 import { getShipmentIdFromQr } from "../../src/functions/getShipmentIdFromQr.js";
+import { checkIfFulfillment } from "../../src/functions/checkIfFulfillment.js";
 
 export async function asignar(
   company,
@@ -27,15 +27,7 @@ export async function asignar(
 
   const shipmentId = await getShipmentIdFromQr(company.did, dataQr);
 
-  const checkIfFFA = `SELECT elim FROM envios WHERE superado=0 AND elim=52 AND did = ?`;
-  const ffaRows = await executeQuery(dbConnection, checkIfFFA, [shipmentId]);
-  if (ffaRows.length > 0) {
-    dbConnection.end();
-    throw new CustomException({
-      title: "Fulfillment Error",
-      message: "El paquete todavia no esta armado, espera a terminar el proceso y vuelva a intentarlo.",
-    });
-  }
+  await checkIfFulfillment(dbConnection, shipmentId);
 
   const sqlAsignado = `SELECT id, estado FROM envios_asignaciones WHERE superado=0 AND elim=0 AND didEnvio = ? AND operador = ?`;
   const asignadoRows = await executeQuery(dbConnection, sqlAsignado, [
