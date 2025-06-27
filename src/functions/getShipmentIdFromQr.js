@@ -1,5 +1,6 @@
 import axios from "axios";
 import { logRed } from "./logsCustom.js";
+import CustomException from "../../classes/custom_exception.js";
 
 export async function getShipmentIdFromQr(companyId, dataQr) {
 
@@ -22,7 +23,10 @@ export async function getShipmentIdFromQr(companyId, dataQr) {
             return result.data.body;
         } else {
             logRed("Error al obtener el shipmentId");
-            throw new Error("Error al obtener el shipmentId");
+            throw new CustomException({
+                title: "Error al obtener el shipmentId",
+                message: "No se pudo obtener el id del envío desde el QR."
+            });
         }
     } catch (error) {
         logRed(`Error al obtener el shipmentId: ${error.stack}`);
