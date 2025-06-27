@@ -3,12 +3,11 @@ import {
   getProdDbConfig,
   updateRedis,
 } from "../../db.js";
-import mysql from "mysql";
 import { logCyan } from "../../src/functions/logsCustom.js";
 import { crearTablaAsignaciones } from "../functions/crearTablaAsignaciones.js";
 import { crearUsuario } from "../functions/crearUsuario.js";
 import { insertAsignacionesDB } from "../functions/insertAsignacionesDB.js";
-import mysql2 from "mysql2/promise";
+import mysql2 from "mysql2";
 import CustomException from "../../classes/custom_exception.js";
 import { getShipmentIdFromQr } from "../../src/functions/getShipmentIdFromQr.js";
 
@@ -21,7 +20,7 @@ export async function verificacionDeAsignacion(
   deviceFrom
 ) {
   const dbConfig = getProdDbConfig(company);
-  const dbConnection = mysql.createConnection(dbConfig);
+  const dbConnection = mysql2.createConnection(dbConfig);
   dbConnection.connect();
 
   const shipmentId = await getShipmentIdFromQr(company.did, dataQr)

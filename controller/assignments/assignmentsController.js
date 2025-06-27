@@ -8,7 +8,7 @@ import { crearTablaAsignaciones } from "../functions/crearTablaAsignaciones.js";
 
 import { crearUsuario } from "../functions/crearUsuario.js";
 import { insertAsignacionesDB } from "../functions/insertAsignacionesDB.js";
-import mysql from "mysql";
+import mysql2 from "mysql2";
 import { getShipmentIdFromQr } from "../../src/functions/getShipmentIdFromQr.js";
 import { checkIfFulfillment } from "../../src/functions/checkIfFulfillment.js";
 
@@ -20,7 +20,7 @@ export async function asignar(
   deviceFrom
 ) {
   const dbConfig = getProdDbConfig(company);
-  const dbConnection = mysql.createConnection(dbConfig);
+  const dbConnection = mysql2.createConnection(dbConfig);
   dbConnection.connect();
 
   const dataQr = body.dataQr;
@@ -139,7 +139,7 @@ export async function asignar(
 
 export async function desasignar(company, userId, body, deviceFrom) {
   const dbConfig = getProdDbConfig(company);
-  const dbConnection = mysql.createConnection(dbConfig);
+  const dbConnection = mysql2.createConnection(dbConfig);
   dbConnection.connect();
 
   const dataQr = body.dataQr;
