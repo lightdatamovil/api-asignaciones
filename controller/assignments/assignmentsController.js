@@ -45,10 +45,11 @@ export async function asignar(
 
   if (asignadoRows.length > 0) {
     dbConnection.end();
-    throw new CustomException({
-      title: "Asignación Error",
+    return {
+      feature: "asignacion",
+      success: false,
       message: "El paquete ya se encuentra asignado a este chofer.",
-    });
+    };
   }
   logCyan("El paquete todavia no está asignado");
 
@@ -60,10 +61,11 @@ export async function asignar(
 
   if (estadoRows.length === 0) {
     dbConnection.end();
-    throw new CustomException({
-      title: "No se pudo obtener el estado del paquete.",
-      message: "El paquete no tiene un estado definido."
-    });
+    return {
+      feature: "asignacion",
+      success: false,
+      message: "No se pudo obtener el estado del paquete.",
+    };
   }
 
   const estado = estadoRows[0].estado;
@@ -138,7 +140,6 @@ export async function asignar(
     message: "Asignación realizada correctamente",
   };
 
-
   dbConnection.end();
   return resultado;
 
@@ -161,19 +162,22 @@ export async function desasignar(company, userId, body, deviceFrom) {
 
   if (operador == 0) {
     dbConnection.end();
-    throw new CustomException({
-      title: "Desasignación Error",
+    return {
+      feature: "asignacion",
+      success: false,
       message: "El paquete ya está desasignado.",
-    });
+    };
   }
   logCyan("El paquete está asignado");
 
   if (!shipmentId) {
     dbConnection.end();
-    throw new CustomException({
-      title: "No se pudo obtener el id del envío.",
-      message: "El QR no contiene un id de envío válido."
-    });
+
+    return {
+      feature: "asignacion",
+      success: false,
+      message: "Error al obtener el id del envio",
+    };
   }
   if (company.did == 4) {
     const setEstadoAsignacion =
