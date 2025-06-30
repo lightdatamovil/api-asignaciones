@@ -18,7 +18,8 @@ const asignacionesDBName = process.env.ASIGNACIONES_DB_NAME;
 const asignacionesDBPort = process.env.ASIGNACIONES_DB_PORT;
 
 /// Se usa para la conexion a la base de datos de produccion de cada endpoint
-const hostProductionDb = process.env.HOST_PRODUCTION_DB;
+const hostProductionDb = process.env.PRODUCTION_DB_HOST;
+const portProductionDb = process.env.PRODUCTION_DB_PORT;
 
 export const redisClient = redis.createClient({
     socket: {
@@ -78,7 +79,8 @@ export function getProdDbConfig(company) {
         host: hostProductionDb,
         user: company.dbuser,
         password: company.dbpass,
-        database: company.dbname
+        database: company.dbname,
+        port: portProductionDb
     };
 }
 
