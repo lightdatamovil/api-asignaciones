@@ -4,12 +4,12 @@ import {
   desasignar,
 } from "../controller/assignments/assignmentsController.js";
 import { verifyParameters } from "../src/functions/verifyParameters.js";
-import { getCompanyById } from "../db.js";
+import { getCompanyById, getProdDbConfig } from "../db.js";
 import { verificacionDeAsignacion } from "../controller/assignmentsProCourrier/assignmentsProcourrierController.js";
 import { logPurple, logRed } from "../src/functions/logsCustom.js";
 import { crearLog } from "../src/functions/createLog.js";
 import CustomException from "../classes/custom_exception.js";
-import { getConnection } from "../src/functions/getConnection.js";
+import mysql2 from "mysql2";
 
 const asignaciones = Router();
 
@@ -32,10 +32,10 @@ asignaciones.post("/asignar", async (req, res) => {
   }
 
   const company = await getCompanyById(companyId);
-  const dbConnection = getConnection(company);
-  dbConnection.connect(err => {
-    if (err) logRed(`Error al conectar BD: ${err.stack}`);
-  });
+
+  const dbConfig = getProdDbConfig(company);
+  const dbConnection = mysql2.createConnection(dbConfig);
+  dbConnection.connect();
 
   try {
     let result;
@@ -97,7 +97,10 @@ asignaciones.post("/desasignar", async (req, res) => {
 
   const company = await getCompanyById(companyId);
 
-  const dbConnection = getConnection(company).connect();
+  const dbConfig = getProdDbConfig(company);
+  const dbConnection = mysql2.createConnection(dbConfig);
+  dbConnection.connect();
+
   try {
 
     const result = await desasignar(

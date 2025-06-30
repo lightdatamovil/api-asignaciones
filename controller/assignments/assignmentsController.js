@@ -1,6 +1,5 @@
 import {
   executeQuery,
-  getProdDbConfig,
   updateRedis,
 } from "../../db.js";
 import { logCyan } from "../../src/functions/logsCustom.js";
@@ -8,7 +7,6 @@ import { crearTablaAsignaciones } from "../functions/crearTablaAsignaciones.js";
 
 import { crearUsuario } from "../functions/crearUsuario.js";
 import { insertAsignacionesDB } from "../functions/insertAsignacionesDB.js";
-import mysql2 from "mysql2";
 import { getShipmentIdFromQr } from "../../src/functions/getShipmentIdFromQr.js";
 import { checkIfFulfillment } from "../../src/functions/checkIfFulfillment.js";
 
@@ -131,10 +129,7 @@ export async function asignar(
   return resultado;
 }
 
-export async function desasignar(company, userId, body, deviceFrom) {
-  const dbConfig = getProdDbConfig(company);
-  const dbConnection = mysql2.createConnection(dbConfig);
-  dbConnection.connect();
+export async function desasignar(dbConnection, company, userId, body, deviceFrom) {
 
   const dataQr = body.dataQr;
 
