@@ -5,15 +5,20 @@ import { logRed, logYellow } from './src/functions/logsCustom.js';
 
 dotenv.config({ path: process.env.ENV_FILE || ".env" });
 
+/// Se usan para traer todas las empresas
 const redisHost = process.env.REDIS_HOST;
 const redisPort = process.env.REDIS_PORT;
 const redisPassword = process.env.REDIS_PASSWORD;
 
-const databaseHost = process.env.DATABASE_HOST;
-const databasePort = process.env.DATABASE_PORT;
-const databaseUser = process.env.DATABASE_USER;
-const databasePassword = process.env.DATABASE_PASSWORD;
-const databaseName = process.env.DATABASE_NAME;
+/// Se usa para los logs
+const asignacionesDBHost = process.env.ASIGNACIONES_DB_HOST;
+const asignacionesDBUser = process.env.ASIGNACIONES_DB_USER;
+const asignacionesDBPassword = process.env.ASIGNACIONES_DB_PASSWORD;
+const asignacionesDBName = process.env.ASIGNACIONES_DB_NAME;
+const asignacionesDBPort = process.env.ASIGNACIONES_DB_PORT;
+
+/// Se usa para la conexion a la base de datos de produccion de cada endpoint
+const hostProductionDb = process.env.HOST_PRODUCTION_DB;
 
 export const redisClient = redis.createClient({
     socket: {
@@ -28,11 +33,11 @@ redisClient.on('error', (err) => {
 });
 
 const poolLocal = mysql2.createPool({
-    host: databaseHost,
-    user: databaseUser,
-    password: databasePassword,
-    database: databaseName,
-    port: databasePort,
+    host: asignacionesDBHost,
+    user: asignacionesDBUser,
+    password: asignacionesDBPassword,
+    database: asignacionesDBName,
+    port: asignacionesDBPort,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
@@ -70,7 +75,7 @@ let companiesList = [];
 
 export function getProdDbConfig(company) {
     return {
-        host: "bhsmysql1.lightdata.com.ar",
+        host: hostProductionDb,
         user: company.dbuser,
         password: company.dbpass,
         database: company.dbname
