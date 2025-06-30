@@ -1,8 +1,4 @@
 import { Router } from "express";
-import {
-  asignar,
-  desasignar,
-} from "../controller/assignments/assignmentsController.js";
 import { verifyParameters } from "../src/functions/verifyParameters.js";
 import { getCompanyById, getProdDbConfig } from "../db.js";
 import { verificacionDeAsignacion } from "../controller/assignmentsProCourrier/assignmentsProcourrierController.js";
@@ -10,6 +6,8 @@ import { logPurple, logRed } from "../src/functions/logsCustom.js";
 import { crearLog } from "../src/functions/createLog.js";
 import CustomException from "../classes/custom_exception.js";
 import mysql2 from "mysql2";
+import { asignar } from "../controller/assignments/assign.js";
+import { desasignar } from "../controller/assignments/unassign.js";
 
 const asignaciones = Router();
 
