@@ -115,7 +115,7 @@ export async function asignar(
   );
   logCyan("Inserto en la base de datos individual de asignaciones");
 
-  await updateRedis(company.did, shipmentId, driverId);
+  //await updateRedis(company.did, shipmentId, driverId);
   logCyan("Actualizo Redis con la asignación");
 
   const resultado = {
