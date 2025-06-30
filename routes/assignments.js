@@ -1,13 +1,13 @@
 import { Router } from "express";
 import { verifyParameters } from "../src/functions/verifyParameters.js";
 import { getCompanyById, getProdDbConfig } from "../db.js";
-import { verificacionDeAsignacion } from "../controller/assignmentsProCourrier/assignmentsProcourrierController.js";
 import { logPurple, logRed } from "../src/functions/logsCustom.js";
 import { crearLog } from "../src/functions/createLog.js";
 import CustomException from "../classes/custom_exception.js";
 import mysql2 from "mysql2";
 import { asignar } from "../controller/assignments/assign.js";
 import { desasignar } from "../controller/assignments/unassign.js";
+import { verificacionDeAsignacion } from "../controller/assignments/verifyAssignment.js";
 
 const asignaciones = Router();
 
@@ -61,7 +61,7 @@ asignaciones.post("/asignar", async (req, res) => {
       );
     }
 
-    //crearLog(companyId, userId, profile, req.body, performance.now() - startTime, JSON.stringify(result), "/asignar", "api", true);
+    crearLog(companyId, userId, profile, req.body, performance.now() - startTime, JSON.stringify(result), "/asignar", "api", true);
     res.status(200).json(result);
   } catch (error) {
     if (error instanceof CustomException) {
