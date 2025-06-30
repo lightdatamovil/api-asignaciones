@@ -52,12 +52,12 @@ export async function asignar(
 
     const estado = estadoRows[0].estado;
 
-    await crearTablaAsignaciones(company.did);
+    /*await crearTablaAsignaciones(company.did);
     logCyan("Creo la tabla de asignaciones");
 
     await crearUsuario(company.did);
     logCyan("Creo el usuario");
-
+*/
     const insertSql = `INSERT INTO envios_asignaciones (did, operador, didEnvio, estado, quien, desde) VALUES (?, ?, ?, ?, ?, ?)`;
     const result = await executeQuery(dbConnection, insertSql, [
         "",
