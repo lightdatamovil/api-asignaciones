@@ -63,7 +63,7 @@ asignaciones.post("/asignar", async (req, res) => {
       );
     }
 
-    //  crearLog(companyId, userId, profile, req.body, performance.now() - startTime, JSON.stringify(result), "/asignar", "api", true);
+    crearLog(companyId, userId, profile, req.body, performance.now() - startTime, JSON.stringify(result), "/asignar", "api", true);
     res.status(200).json(result);
   } catch (error) {
     if (error instanceof CustomException) {
