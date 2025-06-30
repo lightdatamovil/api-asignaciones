@@ -1,10 +1,10 @@
-import { executeQuery, updateRedis } from "../../db";
-import { checkIfFulfillment } from "../../src/functions/checkIfFulfillment";
-import { getShipmentIdFromQr } from "../../src/functions/getShipmentIdFromQr";
-import { logCyan } from "../../src/functions/logsCustom";
-import { crearTablaAsignaciones } from "../functions/crearTablaAsignaciones";
-import { crearUsuario } from "../functions/crearUsuario";
-import { insertAsignacionesDB } from "../functions/insertAsignacionesDB";
+import { executeQuery } from "../../db.js";
+import { checkIfFulfillment } from "../../src/functions/checkIfFulfillment.js";
+import { getShipmentIdFromQr } from "../../src/functions/getShipmentIdFromQr.js";
+import { logCyan } from "../../src/functions/logsCustom.js";
+import { crearTablaAsignaciones } from "../functions/crearTablaAsignaciones.js";
+import { crearUsuario } from "../functions/crearUsuario.js";
+import { insertAsignacionesDB } from "../functions/insertAsignacionesDB.js";
 
 export async function asignar(
     dbConnection,
@@ -14,7 +14,6 @@ export async function asignar(
     driverId,
     deviceFrom
 ) {
-
     const dataQr = body.dataQr;
 
     const shipmentId = await getShipmentIdFromQr(company.did, dataQr);
@@ -22,10 +21,7 @@ export async function asignar(
     await checkIfFulfillment(dbConnection, shipmentId);
 
     const sqlAsignado = `SELECT id, estado FROM envios_asignaciones WHERE superado=0 AND elim=0 AND didEnvio = ? AND operador = ?`;
-    const asignadoRows = await executeQuery(dbConnection, sqlAsignado, [
-        shipmentId,
-        driverId,
-    ]);
+    const asignadoRows = await executeQuery(dbConnection, sqlAsignado, [shipmentId, driverId]);
 
     if (asignadoRows.length > 0) {
         return {
@@ -35,7 +31,6 @@ export async function asignar(
         };
     }
     logCyan("El paquete todavia no está asignado");
-
     const estadoQuery = `SELECT estado FROM envios_historial WHERE superado=0 AND elim=0 AND didEnvio = ?`;
     const estadoRows = await executeQuery(dbConnection, estadoQuery, [
         shipmentId,
@@ -72,30 +67,12 @@ export async function asignar(
     const did = result.insertId;
 
     const queries = [
-        {
-            sql: `UPDATE envios_asignaciones SET did = ? WHERE superado=0 AND elim=0 AND id = ?`,
-            values: [did, did],
-        },
-        {
-            sql: `UPDATE envios_asignaciones SET superado = 1 WHERE superado=0 AND elim=0 AND didEnvio = ? AND did != ?`,
-            values: [shipmentId, did],
-        },
-        {
-            sql: `UPDATE envios SET choferAsignado = ? WHERE superado=0 AND elim=0 AND did = ?`,
-            values: [driverId, shipmentId],
-        },
-        {
-            sql: `UPDATE ruteo_paradas SET superado = 1 WHERE superado=0 AND elim=0 AND didPaquete = ?`,
-            values: [shipmentId],
-        },
-        {
-            sql: `UPDATE envios_historial SET didCadete = ? WHERE superado=0 AND elim=0 AND didEnvio = ?`,
-            values: [driverId, shipmentId],
-        },
-        {
-            sql: `UPDATE envios SET costoActualizadoChofer = 0 WHERE superado=0 AND elim=0 AND did = ?`,
-            values: [shipmentId],
-        },
+        { sql: `UPDATE envios_asignaciones SET did = ? WHERE superado=0 AND elim=0 AND id = ?`, values: [did, did], },
+        { sql: `UPDATE envios_asignaciones SET superado = 1 WHERE superado=0 AND elim=0 AND didEnvio = ? AND did != ?`, values: [shipmentId, did], },
+        { sql: `UPDATE envios SET choferAsignado = ? WHERE superado=0 AND elim=0 AND did = ?`, values: [driverId, shipmentId], },
+        { sql: `UPDATE ruteo_paradas SET superado = 1 WHERE superado=0 AND elim=0 AND didPaquete = ?`, values: [shipmentId], },
+        { sql: `UPDATE envios_historial SET didCadete = ? WHERE superado=0 AND elim=0 AND didEnvio = ?`, values: [driverId, shipmentId], },
+        { sql: `UPDATE envios SET costoActualizadoChofer = 0 WHERE superado=0 AND elim=0 AND did = ?`, values: [shipmentId], },
     ];
 
     for (const { sql, values } of queries) {
@@ -113,7 +90,7 @@ export async function asignar(
     );
     logCyan("Inserto en la base de datos individual de asignaciones");
 
-    await updateRedis(company.did, shipmentId, driverId);
+    // await updateRedis(company.did, shipmentId, driverId);
     logCyan("Actualizo Redis con la asignación");
 
     const resultado = {

@@ -7,7 +7,7 @@ import CustomException from "../classes/custom_exception.js";
 import mysql2 from "mysql2";
 import { asignar } from "../controller/assignments/assign.js";
 import { desasignar } from "../controller/assignments/unassign.js";
-import { verificacionDeAsignacion } from "../controller/assignments/verifyAssignment.js";
+import { verifyAssignment } from "../controller/assignments/verifyAssignment.js";
 
 const asignaciones = Router();
 
@@ -39,7 +39,7 @@ asignaciones.post("/asignar", async (req, res) => {
     let result;
 
     if (company.did == 4) {
-      result = await verificacionDeAsignacion(
+      result = await verifyAssignment(
         dbConnection,
         company,
         userId,

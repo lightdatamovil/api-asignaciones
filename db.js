@@ -102,16 +102,33 @@ export async function getCompanyById(companyId) {
     return company;
 }
 
-export async function executeQuery(connection, query, values) {
-    return new Promise((resolve, reject) => {
-        connection.query(query, values, (err, results) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(results);
-            }
+export async function executeQuery(connection, query, values, log) {
+    // Utilizamos connection.format para obtener la query completa con valores
+    const formattedQuery = connection.format(query, values);
+
+    try {
+        return new Promise((resolve, reject) => {
+            connection.query(query, values, (err, results) => {
+                if (log) {
+                    logYellow(`Ejecutando query: ${formattedQuery}`);
+                }
+                if (err) {
+                    if (log) {
+                        logRed(`Error en executeQuery: ${err.message} en query: ${formattedQuery}`);
+                    }
+                    reject(err);
+                } else {
+                    if (log) {
+                        logYellow(`Query ejecutado con éxito: ${formattedQuery} - Resultados: ${JSON.stringify(results)}`);
+                    }
+                    resolve(results);
+                }
+            });
         });
-    });
+    } catch (error) {
+        logRed(`Error en executeQuery: ${error.stack}`);
+        throw error;
+    }
 }
 
 export function executeQueryFromPool(query, values = [], log = false) {

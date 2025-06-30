@@ -1,7 +1,7 @@
-import { executeQuery, updateRedis } from "../../db";
-import { getShipmentIdFromQr } from "../../src/functions/getShipmentIdFromQr";
-import { logCyan } from "../../src/functions/logsCustom";
-import { insertAsignacionesDB } from "../functions/insertAsignacionesDB";
+import { executeQuery } from "../../db.js";
+import { getShipmentIdFromQr } from "../../src/functions/getShipmentIdFromQr.js";
+import { logCyan } from "../../src/functions/logsCustom.js";
+import { insertAsignacionesDB } from "../functions/insertAsignacionesDB.js";
 
 export async function desasignar(dbConnection, company, userId, body, deviceFrom) {
 
@@ -83,7 +83,7 @@ export async function desasignar(dbConnection, company, userId, body, deviceFrom
     );
     logCyan("Inserto en la base de datos individual de asignaciones");
 
-    await updateRedis(company.did, shipmentId, 0);
+    // await updateRedis(company.did, shipmentId, 0);
     logCyan("Updateo redis con la desasignación");
 
     const resultado = {
