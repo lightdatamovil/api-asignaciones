@@ -3,9 +3,7 @@ import {
   updateRedis,
 } from "../../db.js";
 import { logCyan } from "../../src/functions/logsCustom.js";
-import { crearTablaAsignaciones } from "../functions/crearTablaAsignaciones.js";
 
-import { crearUsuario } from "../functions/crearUsuario.js";
 import { insertAsignacionesDB } from "../functions/insertAsignacionesDB.js";
 import { getShipmentIdFromQr } from "../../src/functions/getShipmentIdFromQr.js";
 import { checkIfFulfillment } from "../../src/functions/checkIfFulfillment.js";
