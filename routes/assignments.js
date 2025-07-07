@@ -54,7 +54,7 @@ asignaciones.post("/asignar", async (req, res) => {
         dbConnection,
         company,
         userId,
-        req.body,
+        dataQr,
         driverId,
         deviceFrom,
         startTime

@@ -1,4 +1,3 @@
-import CustomException from "../../classes/custom_exception.js";
 import { executeQuery, updateRedis } from "../../db.js";
 import { getShipmentIdFromQr } from "../../src/functions/getShipmentIdFromQr.js";
 import { logCyan } from "../../src/functions/logsCustom.js";
@@ -30,10 +29,10 @@ export async function verifyAssignment(
     const envios = await executeQuery(dbConnection, sql, []);
 
     if (envios.length === 0) {
-        throw new CustomException({
-            title: "No se encontró el paquete",
-            message: "El paquete no existe o ha sido eliminado.",
-        });
+        return {
+            success: false,
+            message: "No se encontró el paquete",
+        };
     }
     logCyan("Obtengo el envío");
 
@@ -80,52 +79,49 @@ export async function verifyAssignment(
     } else {
         if (profile === 1 && estadoAsignacion === 1) {
             logCyan("Es perfil 1 y estadoAsignacion 1");
-            const insertSql = `INSERT INTO asignaciones_fallidas (did, operador, didEnvio, quien, tipo_mensaje, desde) VALUES (?, ?, ?, ?, ?, ?)`;
+            const insertSql = `INSERT INTO asignaciones_fallidas ( operador, didEnvio, quien, tipo_mensaje, desde) VALUES (?, ?, ?, ?, ?)`;
             await executeQuery(dbConnection, insertSql, [
-                "",
                 userId,
                 shipmentId,
                 driverId,
                 1,
                 deviceFrom,
             ]);
-            throw new CustomException({
-                title: "Asignación Error",
+            return {
+                success: false,
                 message: "Este paquete ya fue asignado a otro cadete",
-            });
+            };
         }
         if (profile === 3 && [2, 3].includes(estadoAsignacion)) {
             logCyan("Es perfil 3 y estadoAsignacion 2");
 
             const insertSql = `INSERT INTO asignaciones_fallidas ( operador, didEnvio, quien, tipo_mensaje, desde) VALUES (?, ?, ?, ?, ?)`;
             await executeQuery(dbConnection, insertSql, [
-
                 userId,
                 shipmentId,
                 driverId,
                 2,
                 deviceFrom,
             ]);
-            throw new CustomException({
-                title: "Asignación Error",
+            return {
+                success: false,
                 message: "Este paquete ya fue auto asignado por otro cadete",
-            });
+            };
         }
         if (profile === 5 && [1, 3, 4, 5].includes(estadoAsignacion)) {
             logCyan("Es perfil 5 y estadoAsignacion 1, 3, 4 o 5");
-            const insertSql = `INSERT INTO asignaciones_fallidas (did, operador, didEnvio, quien, tipo_mensaje, desde) VALUES (?, ?, ?, ?, ?, ?)`;
+            const insertSql = `INSERT INTO asignaciones_fallidas (operador, didEnvio, quien, tipo_mensaje, desde) VALUES (?, ?, ?, ?, ?)`;
             await executeQuery(dbConnection, insertSql, [
-                "",
                 userId,
                 shipmentId,
                 driverId,
                 3,
                 deviceFrom,
             ]);
-            throw new CustomException({
-                title: "Asignación Error",
+            return {
+                success: false,
                 message: "Este paquete ya fue confirmado a otro cadete",
-            });
+            };
         }
     }
 
@@ -183,18 +179,18 @@ export async function verifyAssignment(
     }
 
     if (noCumple) {
-        throw new CustomException({
-            title: "Asignación Error",
+        return {
+            success: false,
             message: message,
-        });
+        };
     } else {
         await asignar(
             dbConnection,
             company,
             userId,
+            dataQr,
             driverId,
-            deviceFrom,
-            shipmentId
+            deviceFrom
         );
         logCyan("Asignado correctamente");
 
