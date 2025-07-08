@@ -72,20 +72,8 @@ export async function verifyAssignment(
             tipo_mensaje: 1,
         },
         {
-            condition: !esElMismoCadete && profile === 3 && estadoAsignacion === 1,
-            log: "Es perfil 3 y estadoAsignacion 1",
-            message: "No tenes el paquete asignado",
-            tipo_mensaje: 2,
-        },
-        {
-            condition: !esElMismoCadete && profile === 3 && estadoAsignacion === 4,
-            log: "Es perfil 3 y estadoAsignacion 4",
-            message: "No tenes el paquete asignado",
-            tipo_mensaje: 2,
-        },
-        {
-            condition: !esElMismoCadete && profile === 3 && [2, 3].includes(estadoAsignacion),
-            log: "Es perfil 3 y estadoAsignacion 2",
+            condition: !esElMismoCadete && profile === 3 && [1, 2, 3, 4, 5].includes(estadoAsignacion),
+            log: "Es perfil 3 y estadoAsignacion " + estadoAsignacion,
             message: "No tenes el paquete asignado",
             tipo_mensaje: 2,
         },
