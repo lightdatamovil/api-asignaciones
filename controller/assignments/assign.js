@@ -17,7 +17,7 @@ export async function asignar(
     const shipmentId = await getShipmentIdFromQr(company.did, dataQr);
     await checkIfFulfillment(dbConnection, shipmentId);
 
-    const sqlAsignado = `SELECT id, estado FROM envios_asignaciones WHERE superado=0 AND elim=0 AND didEnvio = ? AND operador = ?`;
+    const sqlAsignado = `SELECT id FROM envios_asignaciones WHERE superado=0 AND elim=0 AND didEnvio = ? AND operador = ?`;
     const asignadoRows = await executeQuery(dbConnection, sqlAsignado, [shipmentId, driverId]);
 
     if (asignadoRows.length > 0) {
@@ -28,10 +28,8 @@ export async function asignar(
         };
     }
     logCyan("El paquete todavia no está asignado");
-    const estadoQuery = `SELECT estado FROM envios_historial WHERE superado=0 AND elim=0 AND didEnvio = ?`;
-    const estadoRows = await executeQuery(dbConnection, estadoQuery, [
-        shipmentId,
-    ]);
+    const estadoQuery = `SELECT estado FROM envios WHERE superado=0 AND elim=0 AND did = ?`;
+    const estadoRows = await executeQuery(dbConnection, estadoQuery, [shipmentId]);
     logCyan("Obtengo el estado del paquete");
 
     if (estadoRows.length === 0) {

@@ -2,8 +2,7 @@ import { executeQuery } from "../../db.js";
 import { logCyan } from "../../src/functions/logsCustom.js";
 import { asignar_web } from "./assign_web.js";
 
-
-export async function verifyAssignment(
+export async function verificarAsignacionWeb(
     dbConnection,
     company,
     userId,
