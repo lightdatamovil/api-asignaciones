@@ -74,13 +74,13 @@ export async function verifyAssignment(
         {
             condition: !esElMismoCadete && profile === 3 && estadoAsignacion === 1,
             log: "Es perfil 3 y estadoAsignacion 1",
-            message: "Este paquete ya fue autoasignado por otro cadete",
+            message: "No tenes el paquete asignado",
             tipo_mensaje: 2,
         },
         {
             condition: !esElMismoCadete && profile === 3 && [2, 3].includes(estadoAsignacion),
             log: "Es perfil 3 y estadoAsignacion 2",
-            message: "Este paquete ya fue autoasignado por otro cadete",
+            message: "No tenes el paquete asignado",
             tipo_mensaje: 2,
         },
         {
