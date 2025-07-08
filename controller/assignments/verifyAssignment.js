@@ -78,6 +78,12 @@ export async function verifyAssignment(
             tipo_mensaje: 2,
         },
         {
+            condition: !esElMismoCadete && profile === 3 && estadoAsignacion === 4,
+            log: "Es perfil 3 y estadoAsignacion 1",
+            message: "No tenes el paquete asignado",
+            tipo_mensaje: 2,
+        },
+        {
             condition: !esElMismoCadete && profile === 3 && [2, 3].includes(estadoAsignacion),
             log: "Es perfil 3 y estadoAsignacion 2",
             message: "No tenes el paquete asignado",
