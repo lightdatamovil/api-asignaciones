@@ -18,7 +18,7 @@ export async function asignar(
     await checkIfFulfillment(dbConnection, shipmentId);
 
     const sqlAsignado = `SELECT id, estado FROM envios_asignaciones WHERE superado=0 AND elim=0 AND didEnvio = ? AND operador = ?`;
-    const asignadoRows = await executeQuery(dbConnection, sqlAsignado, [shipmentId, driverId], true);
+    const asignadoRows = await executeQuery(dbConnection, sqlAsignado, [shipmentId, driverId]);
 
     if (asignadoRows.length > 0) {
         return {
@@ -31,7 +31,7 @@ export async function asignar(
     const estadoQuery = `SELECT estado FROM envios_historial WHERE superado=0 AND elim=0 AND didEnvio = ?`;
     const estadoRows = await executeQuery(dbConnection, estadoQuery, [
         shipmentId,
-    ], true);
+    ]);
     logCyan("Obtengo el estado del paquete");
 
     if (estadoRows.length === 0) {
@@ -58,7 +58,7 @@ export async function asignar(
         estado,
         userId,
         deviceFrom,
-    ], true);
+    ]);
     logCyan("Inserto en la tabla de asignaciones");
 
     const did = result.insertId;

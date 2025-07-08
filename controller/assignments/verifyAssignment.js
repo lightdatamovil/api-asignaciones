@@ -1,4 +1,4 @@
-import { executeQuery, updateRedis } from "../../db.js";
+import { executeQuery } from "../../db.js";
 import { getShipmentIdFromQr } from "../../src/functions/getShipmentIdFromQr.js";
 import { logCyan } from "../../src/functions/logsCustom.js";
 import { asignar } from "./assign.js";
@@ -26,23 +26,16 @@ export async function verifyAssignment(
                 WHERE e.did = ${shipmentId} AND e.superado = 0 AND e.elim = 0 AND e.autofecha > ${hoy}
                 ORDER BY e.autofecha ASC
             `;
-    const envios = await executeQuery(dbConnection, sql, []);
 
-    if (envios.length === 0) {
+    const [envio] = await executeQuery(dbConnection, sql, []);
+
+    if (!envio) {
         return {
             success: false,
             message: "No se encontró el paquete",
         };
     }
     logCyan("Obtengo el envío");
-
-    const envio = envios[0];
-
-    let ponerEnEstado1 = false;
-    let ponerEnEstado2 = false;
-    let ponerEnEstado3 = false;
-    let ponerEnEstado4 = false;
-    let ponerEnEstado5 = false;
 
     let estadoAsignacion = envio.estadoAsignacion;
 
@@ -52,151 +45,130 @@ export async function verifyAssignment(
         [shipmentId]
     );
 
-    let didCadete =
-        resultHistorial.length > 0 ? resultHistorial[0].didCadete : null;
+    let didCadete = resultHistorial.length > 0 ? resultHistorial[0].didCadete : null;
+
     let esElMismoCadete = didCadete === driverId;
 
-    if (esElMismoCadete) {
-        logCyan("Es el mismo cadete");
-        if (profile === 1 && estadoAsignacion === 1) {
-            logCyan("Es el mismo cadete, es perfil 1 y estadoAsignacion 1");
-            return {
-                success: false,
-                message: "Este paquete ya fue asignado a este cadete",
-            };
-        }
-        if (profile === 3 && estadoAsignacion === 2) {
-            logCyan("Es el mismo cadete, es perfil 3 y estadoAsignacion 2");
-            return {
-                success: false,
-                message: "Este paquete ya fue auto asignado a este cadete",
-            };
-        }
-        if (profile === 5 && [3, 4, 5].includes(estadoAsignacion)) {
-            logCyan("Es el mismo cadete, es perfil 5 y estadoAsignacion 3, 4 o 5");
-            return { success: false, message: "Este paquete ya fue confirmado" };
-        }
-    } else {
-        if (profile === 1 && estadoAsignacion === 1) {
-            logCyan("Es perfil 1 y estadoAsignacion 1");
-            const insertSql = `INSERT INTO asignaciones_fallidas ( operador, didEnvio, quien, tipo_mensaje, desde) VALUES (?, ?, ?, ?, ?)`;
-            await executeQuery(dbConnection, insertSql, [
-                userId,
-                shipmentId,
-                driverId,
-                1,
-                deviceFrom,
-            ]);
-            return {
-                success: false,
-                message: "Este paquete ya fue asignado a otro cadete",
-            };
-        }
-        if (profile === 3 && [2, 3].includes(estadoAsignacion)) {
-            logCyan("Es perfil 3 y estadoAsignacion 2");
+    const errorCases = [
+        {
+            condition: esElMismoCadete && profile === 1 && estadoAsignacion === 1,
+            log: "Es el mismo cadete, es perfil 1 y estadoAsignacion 1",
+            message: "Este paquete ya fue asignado a este cadete",
+        },
+        {
+            condition: esElMismoCadete && profile === 3 && estadoAsignacion === 2,
+            log: "Es el mismo cadete, es perfil 3 y estadoAsignacion 2",
+            message: "Este paquete ya fue autoasignado a este cadete",
+        },
+        {
+            condition: esElMismoCadete && profile === 5 && [3, 4, 5].includes(estadoAsignacion),
+            log: "Es el mismo cadete, es perfil 5 y estadoAsignacion 3, 4 o 5",
+            message: "Este paquete ya fue confirmado a este cadete",
+        },
+        {
+            condition: !esElMismoCadete && profile === 1 && estadoAsignacion === 1,
+            log: "Es perfil 1 y estadoAsignacion 1",
+            message: "Este paquete ya fue asignado a otro cadete",
+            tipo_mensaje: 1,
+        },
+        {
+            condition: !esElMismoCadete && profile === 3 && estadoAsignacion === 1,
+            log: "Es perfil 3 y estadoAsignacion 1",
+            message: "Este paquete ya fue autoasignado por otro cadete",
+            tipo_mensaje: 2,
+        },
+        {
+            condition: !esElMismoCadete && profile === 3 && [2, 3].includes(estadoAsignacion),
+            log: "Es perfil 3 y estadoAsignacion 2",
+            message: "Este paquete ya fue autoasignado por otro cadete",
+            tipo_mensaje: 2,
+        },
+        {
+            condition: !esElMismoCadete && profile === 5 && [1, 3, 4, 5].includes(estadoAsignacion),
+            log: "Es perfil 5 y estadoAsignacion 1, 3, 4 o 5",
+            message: "Este paquete ya fue confirmado a otro cadete",
+            tipo_mensaje: 3,
+        },
+    ];
 
-            const insertSql = `INSERT INTO asignaciones_fallidas ( operador, didEnvio, quien, tipo_mensaje, desde) VALUES (?, ?, ?, ?, ?)`;
-            await executeQuery(dbConnection, insertSql, [
-                userId,
-                shipmentId,
-                driverId,
-                2,
-                deviceFrom,
-            ]);
+    for (const err of errorCases) {
+        if (err.condition) {
+            logCyan(err.log);
+            if (err.tipo_mensaje) {
+                const insertSql = `INSERT INTO asignaciones_fallidas (operador, didEnvio, quien, tipo_mensaje, desde) VALUES (?, ?, ?, ?, ?)`;
+                await executeQuery(dbConnection, insertSql, [
+                    userId,
+                    shipmentId,
+                    driverId,
+                    err.tipo_mensaje,
+                    deviceFrom,
+                ]);
+            }
             return {
                 success: false,
-                message: "Este paquete ya fue auto asignado por otro cadete",
-            };
-        }
-        if (profile === 5 && [1, 3, 4, 5].includes(estadoAsignacion)) {
-            logCyan("Es perfil 5 y estadoAsignacion 1, 3, 4 o 5");
-            const insertSql = `INSERT INTO asignaciones_fallidas (operador, didEnvio, quien, tipo_mensaje, desde) VALUES (?, ?, ?, ?, ?)`;
-            await executeQuery(dbConnection, insertSql, [
-                userId,
-                shipmentId,
-                driverId,
-                3,
-                deviceFrom,
-            ]);
-            return {
-                success: false,
-                message: "Este paquete ya fue confirmado a otro cadete",
+                message: err.message,
             };
         }
     }
 
-    if (profile === 1 && estadoAsignacion === 0) ponerEnEstado1 = true;
-    if (profile === 3 && estadoAsignacion === 1) ponerEnEstado2 = true;
-    if (profile === 5 && estadoAsignacion === 0) ponerEnEstado5 = true;
-    if (profile === 5 && estadoAsignacion === 1) ponerEnEstado4 = true;
-    if (profile === 5 && estadoAsignacion === 2) ponerEnEstado3 = true;
+    const transitions = [
+        {
+            condition: profile === 1 && estadoAsignacion === 0,
+            updateState: 1,
+            message: "Asignado correctamente.",
+            log: "Puse en estado 1"
+        },
+        {
+            condition: profile === 3 && estadoAsignacion === 1 && esElMismoCadete,
+            updateState: 2,
+            message: "Autoasignado correctamente.",
+            log: "Puse en estado 2"
+        },
+        {
+            condition: profile === 5 && estadoAsignacion === 2 && esElMismoCadete,
+            updateState: 3,
+            message: "Confirmado correctamente.",
+            log: "Puse en estado 3"
+        },
+        {
+            condition: profile === 5 && estadoAsignacion === 1 && esElMismoCadete,
+            updateState: 4,
+            message: "Confirmado correctamente.",
+            log: "Puse en estado 4"
+        },
+        {
+            condition: profile === 5 && estadoAsignacion === 0,
+            updateState: 5,
+            message: "Asignado correctamente.",
+            log: "Puse en estado 5"
+        }
+    ];
 
-    let noCumple = false;
-    let message = "No se puede asignar el paquete.";
+    let transition = transitions.find(t => t.condition);
 
-    if (ponerEnEstado1) {
-        await executeQuery(
-            dbConnection,
-            "UPDATE envios SET estadoAsignacion = 1 WHERE superado = 0 AND elim = 0 AND did = ?",
-            [shipmentId]
-        );
-        message = "Asignado correctamente.";
-        logCyan("Pongo en estado 1");
-    } else if (ponerEnEstado2) {
-        await executeQuery(
-            dbConnection,
-            "UPDATE envios SET estadoAsignacion = 2 WHERE superado = 0 AND elim = 0 AND did = ?",
-            [shipmentId]
-        );
-        message = "Autoasignado correctamente.";
-        logCyan("Pongo en estado 2");
-    } else if (ponerEnEstado3) {
-        await executeQuery(
-            dbConnection,
-            "UPDATE envios SET estadoAsignacion = 3 WHERE superado = 0 AND elim = 0 AND did = ?",
-            [shipmentId]
-        );
-        message = "Confirmado correctamente.";
-        logCyan("Pongo en estado 3");
-    } else if (ponerEnEstado4) {
-        await executeQuery(
-            dbConnection,
-            "UPDATE envios SET estadoAsignacion = 4 WHERE superado = 0 AND elim = 0 AND did = ?",
-            [shipmentId]
-        );
-        message = "Confirmado correctamente.";
-        logCyan("Pongo en estado 4");
-    } else if (ponerEnEstado5) {
-        await executeQuery(
-            dbConnection,
-            "UPDATE envios SET estadoAsignacion = 5 WHERE superado = 0 AND elim = 0 AND did = ?",
-            [shipmentId]
-        );
-        message = "Asignado correctamente.";
-        logCyan("Pongo en estado 5");
-    } else {
-        noCumple = true;
-    }
-
-    if (noCumple) {
+    if (!transition) {
         return {
             success: false,
-            message: message,
+            message: "No se puede asignar el paquete.",
         };
-    } else {
-        await asignar(
-            dbConnection,
-            company,
-            userId,
-            dataQr,
-            driverId,
-            deviceFrom
-        );
-        logCyan("Asignado correctamente");
-
-        await updateRedis(company.did, shipmentId, driverId);
-        logCyan("Actualizo Redis con la asignación");
-
-        return { success: true, message };
     }
+
+    await executeQuery(
+        dbConnection,
+        "UPDATE envios SET estadoAsignacion = ? WHERE superado = 0 AND elim = 0 AND did = ?",
+        [transition.updateState, shipmentId]
+    );
+    logCyan(transition.log);
+
+    await asignar(
+        dbConnection,
+        company,
+        userId,
+        dataQr,
+        driverId,
+        deviceFrom
+    );
+    logCyan("Asignado correctamente");
+
+    return { success: true, message: transition.message };
 }
