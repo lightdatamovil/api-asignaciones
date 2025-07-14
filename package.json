@@ -16,7 +16,8 @@
     "redis": "^4.6.13"
   },
   "scripts": {
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "dev": "node --watch api-asignaciones.js"
   },
   "devDependencies": {
     "@eslint/js": "^9.28.0",
