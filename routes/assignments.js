@@ -218,6 +218,7 @@ asignaciones.post("/desasignar-web", async (req, res) => {
   const dbConnection = mysql2.createConnection(dbConfig);
   dbConnection.connect();
 
+
   try {
 
     const result = await desasignar_web(
