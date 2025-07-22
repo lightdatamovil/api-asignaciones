@@ -1,6 +1,6 @@
 import axios from "axios";
 import { logRed } from "./logsCustom.js";
-import CustomException from "../../classes/custom_exception.js";
+import CustomException from "../../clases/custom_exception.js";
 
 export async function getShipmentIdFromQr(companyId, dataQr) {
     const payload = {

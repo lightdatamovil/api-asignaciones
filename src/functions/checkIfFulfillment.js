@@ -1,4 +1,4 @@
-import CustomException from "../../classes/custom_exception.js";
+import CustomException from "../../clases/custom_exception.js";
 import { executeQuery } from "../../db.js";
 
 export async function checkIfFulfillment(dbConnection, shipmentId) {

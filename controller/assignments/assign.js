@@ -1,4 +1,4 @@
-import { executeQuery } from "../../db.js";
+import { executeQuery, getProdDbConfig } from "../../db.js";
 import { checkIfFulfillment } from "../../src/functions/checkIfFulfillment.js";
 import { getShipmentIdFromQr } from "../../src/functions/getShipmentIdFromQr.js";
 import { logCyan } from "../../src/functions/logsCustom.js";
@@ -7,13 +7,16 @@ import { crearUsuario } from "../functions/crearUsuario.js";
 import { insertAsignacionesDB } from "../functions/insertAsignacionesDB.js";
 
 export async function asignar(
-    dbConnection,
     company,
     userId,
     dataQr,
     driverId,
     deviceFrom
 ) {
+    const dbConfig = getProdDbConfig(company);
+    const dbConnection = mysql2.createConnection(dbConfig);
+    dbConnection.connect();
+
     const shipmentId = await getShipmentIdFromQr(company.did, dataQr);
     await checkIfFulfillment(dbConnection, shipmentId);
 

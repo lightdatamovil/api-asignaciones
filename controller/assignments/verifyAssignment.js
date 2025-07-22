@@ -4,7 +4,6 @@ import { logCyan } from "../../src/functions/logsCustom.js";
 import { asignar } from "./assign.js";
 
 export async function verifyAssignment(
-    dbConnection,
     company,
     userId,
     profile,
@@ -13,6 +12,7 @@ export async function verifyAssignment(
     deviceFrom
 ) {
     const shipmentId = await getShipmentIdFromQr(company.did, dataQr)
+    const dbConnection = mysql2.createConnection(dbConfig);
 
     let hoy = new Date();
     hoy.setDate(hoy.getDate() - 3);
