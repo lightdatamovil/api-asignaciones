@@ -18,6 +18,7 @@ export async function verifyAssignment(
     hoy.setDate(hoy.getDate() - 3);
     hoy = hoy.toISOString().split("T")[0];
 
+
     let sql = `
                 SELECT e.did, e.quien, sua.perfil, e.autofecha, e.estadoAsignacion
                 FROM envios AS e
@@ -48,6 +49,12 @@ export async function verifyAssignment(
     let didCadete = resultHistorial.length > 0 ? resultHistorial[0].didCadete : null;
 
     let esElMismoCadete = didCadete === driverId;
+
+
+    // logs para chequear tipos 
+    console.log("didCadete:", didCadete, typeof didCadete);
+    console.log("driverId:", driverId, typeof driverId);
+    console.log("esElMismoCadete:", esElMismoCadete, typeof esElMismoCadete);
 
     const errorCases = [
         {
@@ -150,7 +157,7 @@ export async function verifyAssignment(
     await executeQuery(
         dbConnection,
         "UPDATE envios SET estadoAsignacion = ? WHERE superado = 0 AND elim = 0 AND did = ?",
-        [transition.updateState, shipmentId]
+        [transition.updateState, shipmentId], true
     );
     logCyan(transition.log);
 

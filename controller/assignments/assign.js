@@ -14,6 +14,7 @@ export async function asignar(
     driverId,
     deviceFrom
 ) {
+
     const shipmentId = await getShipmentIdFromQr(company.did, dataQr);
     await checkIfFulfillment(dbConnection, shipmentId);
     if (company.did != 4) {
