@@ -3,6 +3,7 @@ import asignaciones from './routes/assignments.js';
 import { redisClient } from './db.js';
 import cors from 'cors';
 import { logBlue } from './src/functions/logsCustom.js';
+import asignaciones_web from './routes/assignments_web.js';
 
 const app = express();
 
@@ -13,7 +14,8 @@ app.use(cors())
 
 const PORT = process.env.PORT;
 
-app.use("/api/asignaciones", asignaciones)
+app.use("/api/asignaciones", asignaciones);
+app.use("/api/asignaciones-web", asignaciones_web)
 
 app.get('/ping', (req, res) => {
   const currentDate = new Date();
