@@ -50,12 +50,6 @@ export async function verifyAssignment(
 
     let esElMismoCadete = didCadete === driverId;
 
-
-    // logs para chequear tipos 
-    console.log("didCadete:", didCadete, typeof didCadete);
-    console.log("driverId:", driverId, typeof driverId);
-    console.log("esElMismoCadete:", esElMismoCadete, typeof esElMismoCadete);
-
     const errorCases = [
         {
             condition: esElMismoCadete && profile === 1 && estadoAsignacion === 1,
