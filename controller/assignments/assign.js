@@ -16,16 +16,17 @@ export async function asignar(
 ) {
     const shipmentId = await getShipmentIdFromQr(company.did, dataQr);
     await checkIfFulfillment(dbConnection, shipmentId);
+    if (company.did != 4) {
+        const sqlAsignado = `SELECT id FROM envios_asignaciones WHERE superado=0 AND elim=0 AND didEnvio = ? AND operador = ?`;
+        const asignadoRows = await executeQuery(dbConnection, sqlAsignado, [shipmentId, driverId]);
 
-    const sqlAsignado = `SELECT id FROM envios_asignaciones WHERE superado=0 AND elim=0 AND didEnvio = ? AND operador = ?`;
-    const asignadoRows = await executeQuery(dbConnection, sqlAsignado, [shipmentId, driverId]);
-
-    if (asignadoRows.length > 0) {
-        return {
-            feature: "asignacion",
-            success: false,
-            message: "El paquete ya se encuentra asignado a este chofer.",
-        };
+        if (asignadoRows.length > 0) {
+            return {
+                feature: "asignacion",
+                success: false,
+                message: "El paquete ya se encuentra asignado a este chofer.",
+            };
+        }
     }
     logCyan("El paquete todavia no está asignado");
     const estadoQuery = `SELECT estado FROM envios WHERE superado=0 AND elim=0 AND did = ?`;
