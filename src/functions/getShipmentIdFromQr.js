@@ -3,7 +3,6 @@ import { logRed } from "./logsCustom.js";
 import CustomException from "../../classes/custom_exception.js";
 
 export async function getShipmentIdFromQr(companyId, dataQr) {
-    logRed(`llegue 3 ${companyId} - ${dataQr}`);
     const payload = {
         companyId: Number(companyId),
         userId: 0,
@@ -16,7 +15,7 @@ export async function getShipmentIdFromQr(companyId, dataQr) {
         appVersion: "null",
         dataQr: dataQr
     };
-    logRed(`llegue 3.5 ${JSON.stringify(payload)}`);
+
     let result;
     try {
 
@@ -28,9 +27,7 @@ export async function getShipmentIdFromQr(companyId, dataQr) {
             message: "No se pudo obtener el id del envío desde el QR."
         });
     }
-    logRed(`llegue 4 ${result}`);
     if (result.status == 200) {
-        logRed(`llegue 5 ${result}`);
         if (Object.prototype.hasOwnProperty.call(result.data.body, "success") && result.data.body.success == false) {
             throw new CustomException({
                 title: result.data.body.message,
