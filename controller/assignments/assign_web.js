@@ -16,7 +16,7 @@ export async function asignar_web(
 ) {
     await checkIfFulfillment(dbConnection, shipmentId);
 
-    const sqlAsignado = `SELECT id, estado FROM envios_asignaciones WHERE superado=0 AND elim=0 AND didEnvio = ? AND operador = ?`;
+    const sqlAsignado = `SELECT id, estado FROM envios_asignaciones WHERE superado=0 AND elim<>1 AND didEnvio = ? AND operador = ?`;
     const asignadoRows = await executeQuery(dbConnection, sqlAsignado, [shipmentId, driverId]);
 
     if (asignadoRows.length > 0) {
@@ -27,7 +27,7 @@ export async function asignar_web(
         };
     }
     logCyan("El paquete todavia no está asignado");
-    const estadoQuery = `SELECT estado FROM envios_historial WHERE superado=0 AND elim=0 AND didEnvio = ?`;
+    const estadoQuery = `SELECT estado FROM envios_historial WHERE superado=0 AND elim<>1 AND didEnvio = ?`;
     const estadoRows = await executeQuery(dbConnection, estadoQuery, [
         shipmentId,
     ]);
@@ -63,12 +63,12 @@ export async function asignar_web(
     const did = result.insertId;
 
     const queries = [
-        { sql: `UPDATE envios_asignaciones SET did = ? WHERE superado=0 AND elim=0 AND id = ?`, values: [did, did], },
-        { sql: `UPDATE envios_asignaciones SET superado = 1 WHERE superado=0 AND elim=0 AND didEnvio = ? AND did != ?`, values: [shipmentId, did], },
-        { sql: `UPDATE envios SET choferAsignado = ? WHERE superado=0 AND elim=0 AND did = ?`, values: [driverId, shipmentId], },
-        { sql: `UPDATE ruteo_paradas SET superado = 1 WHERE superado=0 AND elim=0 AND didPaquete = ?`, values: [shipmentId], },
-        { sql: `UPDATE envios_historial SET didCadete = ? WHERE superado=0 AND elim=0 AND didEnvio = ?`, values: [driverId, shipmentId], },
-        { sql: `UPDATE envios SET costoActualizadoChofer = 0 WHERE superado=0 AND elim=0 AND did = ?`, values: [shipmentId], },
+        { sql: `UPDATE envios_asignaciones SET did = ? WHERE superado=0 AND elim<>1 AND id = ?`, values: [did, did], },
+        { sql: `UPDATE envios_asignaciones SET superado = 1 WHERE superado=0 AND elim<>1 AND didEnvio = ? AND did != ?`, values: [shipmentId, did], },
+        { sql: `UPDATE envios SET choferAsignado = ? WHERE superado=0 AND elim<>1 AND did = ?`, values: [driverId, shipmentId], },
+        { sql: `UPDATE ruteo_paradas SET superado = 1 WHERE superado=0 AND elim<>1 AND didPaquete = ?`, values: [shipmentId], },
+        { sql: `UPDATE envios_historial SET didCadete = ? WHERE superado=0 AND elim<>1 AND didEnvio = ?`, values: [driverId, shipmentId], },
+        { sql: `UPDATE envios SET costoActualizadoChofer = 0 WHERE superado=0 AND elim<>1 AND did = ?`, values: [shipmentId], },
     ];
 
     for (const { sql, values } of queries) {
