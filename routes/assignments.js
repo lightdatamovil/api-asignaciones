@@ -22,11 +22,13 @@ asignaciones.post("/asignar", async (req, res) => {
     "deviceFrom",
   ]);
 
+
   if (errorMessage) {
     return res.status(400).json({ message: errorMessage });
   }
 
   const { companyId, userId, dataQr, driverId, deviceFrom, profile } = req.body;
+
 
   if (companyId == 12 && userId == 49) {
     return res.status(400).json({ message: "Comunicarse con la logística." });

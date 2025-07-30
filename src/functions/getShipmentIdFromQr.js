@@ -16,7 +16,17 @@ export async function getShipmentIdFromQr(companyId, dataQr) {
         dataQr: dataQr
     };
 
-    const result = await axios.post('https://apimovil2.lightdata.app/api/qr/get-shipment-id', payload);
+    let result;
+    try {
+
+        result = await axios.post('https://apimovil2.lightdata.app/api/qr/get-shipment-id', payload);
+    } catch (error) {
+
+        throw new CustomException({
+            title: "Error al obtener el shipmentId",
+            message: "No se pudo obtener el id del envío desde el QR."
+        });
+    }
     if (result.status == 200) {
         if (Object.prototype.hasOwnProperty.call(result.data.body, "success") && result.data.body.success == false) {
             throw new CustomException({

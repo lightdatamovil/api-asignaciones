@@ -4,6 +4,8 @@ import { executeQuery } from "../../db.js";
 export async function checkIfFulfillment(dbConnection, shipmentId) {
     const checkIfFFA = `SELECT elim FROM envios WHERE superado=0 AND elim=52 AND did = ?`;
     const ffaRows = await executeQuery(dbConnection, checkIfFFA, [shipmentId]);
+
+
     if (ffaRows.length > 0) {
         throw new CustomException({
             title: "Fulfillment Error",
