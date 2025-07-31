@@ -147,3 +147,28 @@ export function executeQueryFromPool(query, values = [], log = false) {
         });
     });
 }
+
+export async function getCompanyByCodigoVinculacion(codigoVinculacion) {
+    try {
+        let company;
+        // Asegurarse de que companiesList esté cargado
+        if (!companiesList || Object.keys(companiesList).length === 0) {
+            await loadCompaniesFromRedis();
+        }
+
+        for (const key in companiesList) {
+            if (Object.prototype.hasOwnProperty.call(companiesList, key)) {
+                const currentCompany = companiesList[key];
+                if (String(currentCompany.codigo) === String(codigoVinculacion)) {
+                    company = currentCompany;
+                    break;
+                }
+            }
+        }
+
+        return company;
+    } catch (error) {
+        logRed(`Error en getCompanyByCode: ${error.stack}`);
+        throw error;
+    }
+}

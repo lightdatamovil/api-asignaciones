@@ -1,6 +1,7 @@
-import { executeQuery } from "../../db.js";
+import mysql2 from "mysql2";
+import { executeQuery, getCompanyByCodigoVinculacion, getProdDbConfig } from "../../db.js";
 import { getShipmentIdFromQr } from "../../src/functions/getShipmentIdFromQr.js";
-import { logCyan } from "../../src/functions/logsCustom.js";
+import { logCyan, logPurple, logRed } from "../../src/functions/logsCustom.js";
 import { insertAsignacionesDB } from "../functions/insertAsignacionesDB.js";
 
 export async function desasignar(dbConnection, company, userId, body, deviceFrom) {
@@ -9,8 +10,7 @@ export async function desasignar(dbConnection, company, userId, body, deviceFrom
 
     const shipmentId = await getShipmentIdFromQr(company.did, dataQr);
 
-    const sqlOperador =
-        "SELECT operador, estado FROM envios_asignaciones WHERE didEnvio = ? AND superado = 0 AND elim = 0";
+    const sqlOperador = "SELECT operador, estado FROM envios_asignaciones WHERE didEnvio = ? AND superado = 0 AND elim = 0";
     const result = await executeQuery(dbConnection, sqlOperador, [shipmentId]);
 
     const operador = result.length > 0 ? result[0].operador : 0;
@@ -36,6 +36,32 @@ export async function desasignar(dbConnection, company, userId, body, deviceFrom
         const setEstadoAsignacion =
             "UPDATE envios SET estadoAsignacion = 0 WHERE superado = 0 AND elim=0 AND did = ?";
         await executeQuery(dbConnection, setEstadoAsignacion, [shipmentId]);
+    }
+
+    // revisar si operador en la tbla es logistica
+    const isLogisticaQuery = "SELECT codvinculacion, perfil FROM sistema_usuarios_accesos WHERE did = ? and superado = 0 and elim = 0";
+    const isLogisticaResult = await executeQuery(dbConnection, isLogisticaQuery, [operador], true);
+    const codVinculacion = isLogisticaResult[0].codvinculacion;
+    const esLogisticaExt = isLogisticaResult[0].codvinculacion !== null && isLogisticaResult[0].perfil === 6;
+
+    if (esLogisticaExt) {
+
+        const companyExterna = await getCompanyByCodigoVinculacion(codVinculacion);
+
+        const dbConfigExterna = getProdDbConfig(companyExterna);
+        const dbConnectionExterna = mysql2.createConnection(dbConfigExterna);
+        dbConnectionExterna.connect();
+        try {
+            const shipmentExterno = await getShipmentIdFromQr(companyExterna.did, dataQr);
+
+            const eliminarQuery = 'UPDATE envios SET elim = 1 WHERE did = ? AND superado = 0 AND elim = 0';
+            await executeQuery(dbConnectionExterna, eliminarQuery, [shipmentExterno]);
+
+        } catch (error) {
+            logRed("Error al desasignar en la web:", error);
+        } finally {
+            dbConnectionExterna.end();
+        }
     }
 
     const insertQuery =

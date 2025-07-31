@@ -1,5 +1,6 @@
-import { executeQuery } from "../../db.js";
-import { logCyan } from "../../src/functions/logsCustom.js";
+import mysql2 from "mysql2";
+import { executeQuery, getCompanyByCodigoVinculacion, getProdDbConfig } from "../../db.js";
+import { logCyan, logRed } from "../../src/functions/logsCustom.js";
 import { insertAsignacionesDB } from "../functions/insertAsignacionesDB.js";
 
 
@@ -32,6 +33,34 @@ export async function desasignar_web(dbConnection, company, userId, shipmentId, 
         const setEstadoAsignacion =
             "UPDATE envios SET estadoAsignacion = 0 WHERE superado = 0 AND elim=0 AND did = ?";
         await executeQuery(dbConnection, setEstadoAsignacion, [shipmentId]);
+    }
+
+    // revisar si operador en la tbla es logistica
+    const isLogisticaQuery = "SELECT codvinculacion, perfil FROM sistema_usuarios_accesos WHERE did = ? and superado = 0 and elim = 0";
+    const isLogisticaResult = await executeQuery(dbConnection, isLogisticaQuery, [operador], true);
+    const codVinculacion = isLogisticaResult[0].codvinculacion;
+    const esLogisticaExt = isLogisticaResult[0].codvinculacion !== null && isLogisticaResult[0].perfil === 6;
+
+    if (esLogisticaExt) {
+
+        const companyExterna = await getCompanyByCodigoVinculacion(codVinculacion);
+
+        const dbConfigExterna = getProdDbConfig(companyExterna);
+        const dbConnectionExterna = mysql2.createConnection(dbConfigExterna);
+        dbConnectionExterna.connect();
+        try {
+            const shipmentExternoQuery = 'Select didLocal from envios_exteriores where didExterno = ? AND elim = 0 AND superado = 0 LIMIT 1';
+            const resultShipmentExterno = await executeQuery(dbConnectionExterna, shipmentExternoQuery, [shipmentId], true);
+            const shipmentExterno = resultShipmentExterno[0].didLocal;
+
+            const eliminarQuery = 'UPDATE envios SET elim = 1 WHERE did = ? AND superado = 0 AND elim = 0';
+            await executeQuery(dbConnectionExterna, eliminarQuery, [shipmentExterno], true);
+
+        } catch (error) {
+            logRed("Error al desasignar en la web:", error);
+        } finally {
+            dbConnectionExterna.end();
+        }
     }
 
     const insertQuery =

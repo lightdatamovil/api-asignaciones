@@ -221,7 +221,6 @@ asignaciones.post("/desasignar-web", async (req, res) => {
   dbConnection.connect();
 
   try {
-
     const result = await desasignar_web(
       dbConnection,
       company,
