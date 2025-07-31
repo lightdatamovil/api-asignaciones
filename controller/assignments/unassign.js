@@ -1,7 +1,7 @@
 import mysql2 from "mysql2";
 import { executeQuery, getCompanyByCodigoVinculacion, getProdDbConfig } from "../../db.js";
 import { getShipmentIdFromQr } from "../../src/functions/getShipmentIdFromQr.js";
-import { logCyan, logPurple, logRed } from "../../src/functions/logsCustom.js";
+import { logCyan, logRed } from "../../src/functions/logsCustom.js";
 import { insertAsignacionesDB } from "../functions/insertAsignacionesDB.js";
 
 export async function desasignar(dbConnection, company, userId, body, deviceFrom) {
@@ -110,7 +110,7 @@ export async function desasignar(dbConnection, company, userId, body, deviceFrom
     logCyan("Inserto en la base de datos individual de asignaciones");
 
     // await updateRedis(company.did, shipmentId, 0);
-    logCyan("Updateo redis con la desasignación");
+    // logCyan("Updateo redis con la desasignación");
 
     const resultado = {
         feature: "asignacion",
