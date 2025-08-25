@@ -54,11 +54,11 @@ export async function desasignar_web(dbConnection, company, userId, shipmentId, 
     );
 
     // Actualizar historial
-    await executeQuery(
-        dbConnection,
-        `UPDATE envios_historial SET didCadete=0 WHERE superado=0 AND elim=0 AND didEnvio = ?`,
-        [shipmentId]
-    );
+    // await executeQuery(
+    //     dbConnection,
+    //     `UPDATE envios_historial SET didCadete=0 WHERE superado=0 AND elim=0 AND didEnvio = ?`,
+    //     [shipmentId]
+    // );
 
     // Desasignar chofer
     await executeQuery(

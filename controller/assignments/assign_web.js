@@ -67,7 +67,7 @@ export async function asignar_web(
         { sql: `UPDATE envios_asignaciones SET superado = 1 WHERE superado=0 AND elim<>1 AND didEnvio = ? AND did != ?`, values: [shipmentId, did], },
         { sql: `UPDATE envios SET choferAsignado = ? WHERE superado=0 AND elim<>1 AND did = ?`, values: [driverId, shipmentId], },
         { sql: `UPDATE ruteo_paradas SET superado = 1 WHERE superado=0 AND elim<>1 AND didPaquete = ?`, values: [shipmentId], },
-        { sql: `UPDATE envios_historial SET didCadete = ? WHERE superado=0 AND elim<>1 AND didEnvio = ?`, values: [driverId, shipmentId], },
+        // { sql: `UPDATE envios_historial SET didCadete = ? WHERE superado=0 AND elim<>1 AND didEnvio = ?`, values: [driverId, shipmentId], },
         { sql: `UPDATE envios SET costoActualizadoChofer = 0 WHERE superado=0 AND elim<>1 AND did = ?`, values: [shipmentId], },
     ];
 
