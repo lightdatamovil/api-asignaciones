@@ -20,7 +20,7 @@ export async function verifyAssignment(
 
 
     let sql = `
-                SELECT e.did, e.quien, sua.perfil, e.autofecha, e.estadoAsignacion
+                SELECT e.did, e.choferAsignado, e.quien, sua.perfil, e.autofecha, e.estadoAsignacion
                 FROM envios AS e
                 LEFT JOIN sistema_usuarios_accesos AS sua 
                     ON sua.usuario = e.quien AND sua.superado = 0 AND sua.elim = 0
@@ -40,13 +40,7 @@ export async function verifyAssignment(
 
     let estadoAsignacion = envio.estadoAsignacion;
 
-    let resultHistorial = await executeQuery(
-        dbConnection,
-        "SELECT estado, didCadete FROM envios_historial WHERE didEnvio = ? AND superado = 0 LIMIT 1",
-        [shipmentId]
-    );
-
-    let didCadete = resultHistorial.length > 0 ? resultHistorial[0].didCadete : null;
+    let didCadete = envio.choferAsignado;
 
     let esElMismoCadete = didCadete === driverId;
 
