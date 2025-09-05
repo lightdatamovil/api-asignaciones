@@ -53,8 +53,13 @@ export async function desasignar(dbConnection, company, userId, body, deviceFrom
     // Actualizar asignaciones
     await executeQuery(
         dbConnection,
-        `UPDATE envios_asignaciones SET superado=1, did=${resultInsertQuery.insertId} WHERE superado=0 AND elim=0 AND didEnvio = ?`,
+        `UPDATE envios_asignaciones SET did=${resultInsertQuery.insertId} WHERE superado=0 AND elim=0 AND didEnvio = ?`,
         [shipmentId]
+    );
+    await executeQuery(
+        dbConnection,
+        `UPDATE envios_asignaciones SET superado=1 WHERE superado=0 AND elim=0 AND didEnvio = ? AND id != ?`,
+        [shipmentId, resultInsertQuery.insertId]
     );
 
     // Actualizar historial
