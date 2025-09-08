@@ -1,7 +1,6 @@
 import redis from 'redis';
 import dotenv from 'dotenv';
 import mysql2 from 'mysql2';
-import { logRed, logYellow } from './src/functions/logsCustom.js';
 
 dotenv.config({ path: process.env.ENV_FILE || ".env" });
 
@@ -18,8 +17,8 @@ const asignacionesDBName = process.env.ASIGNACIONES_DB_NAME;
 const asignacionesDBPort = process.env.ASIGNACIONES_DB_PORT;
 
 /// Se usa para la conexion a la base de datos de produccion de cada endpoint
-const hostProductionDb = process.env.PRODUCTION_DB_HOST;
-const portProductionDb = process.env.PRODUCTION_DB_PORT;
+export const hostProductionDb = process.env.PRODUCTION_DB_HOST;
+export const portProductionDb = process.env.PRODUCTION_DB_PORT;
 
 export const redisClient = redis.createClient({
     socket: {
@@ -33,7 +32,7 @@ redisClient.on('error', (err) => {
     console.error('Error al conectar con Redis:', err);
 });
 
-const poolLocal = mysql2.createPool({
+export const poolLocal = mysql2.createPool({
     host: asignacionesDBHost,
     user: asignacionesDBUser,
     password: asignacionesDBPassword,
@@ -69,81 +68,4 @@ export async function updateRedis(empresaId, envioId, choferId) {
     }
 
     await redisClient.set('DWRTE', JSON.stringify(DWRTE));
-}
-
-let companiesList = [];
-
-
-export function getProdDbConfig(company) {
-    return {
-        host: hostProductionDb,
-        user: company.dbuser,
-        password: company.dbpass,
-        database: company.dbname,
-        port: portProductionDb
-    };
-}
-
-async function loadCompaniesFromRedis() {
-    const companiesListString = await redisClient.get('empresasData');
-
-    companiesList = JSON.parse(companiesListString);
-}
-
-export async function getCompanyById(companyId) {
-    let company = companiesList[companyId];
-
-    if (company == undefined || Object.keys(companiesList).length === 0) {
-        await loadCompaniesFromRedis();
-
-        company = companiesList[companyId];
-    }
-
-    return company;
-}
-
-export async function executeQuery(connection, query, values, log) {
-    // Utilizamos connection.format para obtener la query completa con valores
-    const formattedQuery = connection.format(query, values);
-
-    try {
-        return new Promise((resolve, reject) => {
-            connection.query(query, values, (err, results) => {
-                if (log) {
-                    logYellow(`Ejecutando query: ${formattedQuery}`);
-                }
-                if (err) {
-                    if (log) {
-                        logRed(`Error en executeQuery: ${err.message} en query: ${formattedQuery}`);
-                    }
-                    reject(err);
-                } else {
-                    if (log) {
-                        logYellow(`Query ejecutado con éxito: ${formattedQuery} - Resultados: ${JSON.stringify(results)}`);
-                    }
-                    resolve(results);
-                }
-            });
-        });
-    } catch (error) {
-        logRed(`Error en executeQuery: ${error.stack}`);
-        throw error;
-    }
-}
-
-export function executeQueryFromPool(query, values = [], log = false) {
-    const formattedQuery = mysql2.format(query, values);
-
-    return new Promise((resolve, reject) => {
-        if (log) logYellow(`Ejecutando query: ${formattedQuery}`);
-
-        poolLocal.query(formattedQuery, (err, results) => {
-            if (err) {
-                if (log) logRed(`Error en executeQuery: ${err.message} - ${formattedQuery}`);
-                return reject(err);
-            }
-            if (log) logYellow(`Query ejecutada con éxito: ${formattedQuery}`);
-            resolve(results);
-        });
-    });
 }

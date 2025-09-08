@@ -1,6 +1,4 @@
-import { executeQuery } from "../../db.js";
-import { checkIfFulfillment } from "../../src/functions/checkIfFulfillment.js";
-import { logCyan } from "../../src/functions/logsCustom.js";
+import { checkIfFulfillment, executeQuery, logCyan } from "lightdata-tools";
 import { crearTablaAsignaciones } from "../functions/crearTablaAsignaciones.js";
 import { crearUsuario } from "../functions/crearUsuario.js";
 import { insertAsignacionesDB } from "../functions/insertAsignacionesDB.js";
