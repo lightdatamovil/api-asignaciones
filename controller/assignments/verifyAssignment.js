@@ -13,6 +13,7 @@ export async function verifyAssignment(
     deviceFrom
 ) {
     const shipmentId = await getShipmentIdFromQr(company.did, dataQr)
+    console.log("Shipment ID:", shipmentId);
 
     let hoy = new Date();
     hoy.setDate(hoy.getDate() - 3);
@@ -43,12 +44,18 @@ export async function verifyAssignment(
     let didCadete = envio.choferAsignado;
 
     let esElMismoCadete = didCadete === driverId;
+    console.log(esElMismoCadete, " - ", estadoAsignacion, " - ", profile);
 
     const errorCases = [
         {
             condition: esElMismoCadete && profile === 1 && estadoAsignacion === 1,
             log: "Es el mismo cadete, es perfil 1 y estadoAsignacion 1",
             message: "Este paquete ya fue asignado a este cadete",
+        },
+        {
+            condition: esElMismoCadete && profile === 1 && estadoAsignacion === 4,
+            log: "Es perfil 1 y estadoAsignacion 4",
+            message: "Este paquete ya fue confirmado a este cadete",
         },
         {
             condition: esElMismoCadete && profile === 3 && estadoAsignacion === 2,
@@ -78,10 +85,13 @@ export async function verifyAssignment(
             message: "Este paquete ya fue confirmado a otro cadete",
             tipo_mensaje: 3,
         },
+
     ];
+    logCyan("llegue 2");
 
     for (const err of errorCases) {
         if (err.condition) {
+            logCyan("llegue al caso error");
             logCyan(err.log);
             if (err.tipo_mensaje) {
                 const insertSql = `INSERT INTO asignaciones_fallidas (operador, didEnvio, quien, tipo_mensaje, desde) VALUES (?, ?, ?, ?, ?)`;
@@ -91,7 +101,7 @@ export async function verifyAssignment(
                     driverId,
                     err.tipo_mensaje,
                     deviceFrom,
-                ]);
+                ], true);
             }
             return {
                 success: false,
@@ -99,6 +109,7 @@ export async function verifyAssignment(
             };
         }
     }
+    logCyan("llegue 3");
 
     const transitions = [
         {
@@ -134,13 +145,16 @@ export async function verifyAssignment(
     ];
 
     let transition = transitions.find(t => t.condition);
+    logCyan("llegue4");
 
     if (!transition) {
+        logCyan("llegue 3.1");
         return {
             success: false,
             message: "No se puede asignar el paquete.",
         };
     }
+    logCyan("llegue 3");
 
     await executeQuery(
         dbConnection,
