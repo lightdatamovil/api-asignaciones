@@ -1,4 +1,6 @@
-import { executeQueryFromPool } from '../../db.js';
+import { executeQueryFromPool } from "lightdata-tools";
+import { poolLocal } from "../../db.js";
+
 export async function crearTablaAsignaciones(companyId) {
 
     const createTableSql = `
@@ -19,6 +21,6 @@ export async function crearTablaAsignaciones(companyId) {
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
         `;
 
-    await executeQueryFromPool(createTableSql);
+    await executeQueryFromPool(poolLocal, createTableSql);
 
 }

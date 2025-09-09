@@ -1,17 +1,14 @@
-import { executeQuery } from "../../db.js";
-import { getShipmentIdFromQr } from "../../src/functions/getShipmentIdFromQr.js";
-import { logCyan } from "../../src/functions/logsCustom.js";
+import { executeQuery, getHeaders, getShipmentIdFromQr, logCyan } from "lightdata-tools";
 import { asignar } from "./assign.js";
 
 export async function verifyAssignment(
     dbConnection,
+    req,
     company,
-    userId,
-    profile,
-    dataQr,
-    driverId,
-    deviceFrom
 ) {
+    const { dataQr, driverId } = req.body;
+    const { userId, profile } = req.user;
+    const { deviceFrom } = getHeaders(req);
     const shipmentId = await getShipmentIdFromQr(company.did, dataQr)
 
     let hoy = new Date();

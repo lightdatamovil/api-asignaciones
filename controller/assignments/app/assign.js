@@ -1,22 +1,21 @@
-import { executeQuery } from "../../db.js";
-import { checkIfFulfillment } from "../../src/functions/checkIfFulfillment.js";
-import { getShipmentIdFromQr } from "../../src/functions/getShipmentIdFromQr.js";
-import { logCyan } from "../../src/functions/logsCustom.js";
-import { crearTablaAsignaciones } from "../functions/crearTablaAsignaciones.js";
-import { crearUsuario } from "../functions/crearUsuario.js";
-import { insertAsignacionesDB } from "../functions/insertAsignacionesDB.js";
+import { crearTablaAsignaciones } from "../../functions/crearTablaAsignaciones.js";
+import { crearUsuario } from "../../functions/crearUsuario.js";
+import { insertAsignacionesDB } from "../../functions/insertAsignacionesDB.js";
+import { checkIfFulfillment, executeQuery, getHeaders, getShipmentIdFromQr, logCyan } from "lightdata-tools";
 
 export async function asignar(
     dbConnection,
+    req,
     company,
-    userId,
-    dataQr,
-    driverId,
-    deviceFrom
 ) {
+    const { dataQr, driverId } = req.body;
+    const { userId } = req.user;
+    const { deviceFrom } = getHeaders(req);
 
     const shipmentId = await getShipmentIdFromQr(company.did, dataQr);
+
     await checkIfFulfillment(dbConnection, shipmentId);
+
     if (company.did != 4) {
         const sqlAsignado = `SELECT id FROM envios_asignaciones WHERE superado=0 AND elim=0 AND didEnvio = ? AND operador = ?`;
         const asignadoRows = await executeQuery(dbConnection, sqlAsignado, [shipmentId, driverId]);

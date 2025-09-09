@@ -1,6 +1,7 @@
 import redis from 'redis';
 import dotenv from 'dotenv';
 import mysql2 from 'mysql2';
+import { CompaniesService } from 'lightdata-tools';
 
 dotenv.config({ path: process.env.ENV_FILE || ".env" });
 
@@ -42,6 +43,8 @@ export const poolLocal = mysql2.createPool({
     connectionLimit: 10,
     queueLimit: 0
 });
+
+export const companiesService = new CompaniesService({ redisClient, redisKey: "empresasData" })
 
 export async function updateRedis(empresaId, envioId, choferId) {
     let DWRTE = await redisClient.get('DWRTE');

@@ -1,16 +1,14 @@
-import { executeQuery } from "../../db.js";
-import { logCyan } from "../../src/functions/logsCustom.js";
+import { executeQuery, getHeaders, logCyan } from "lightdata-tools";
 import { asignar_web } from "./assign_web.js";
 
 export async function verificarAsignacionWeb(
     dbConnection,
+    req,
     company,
-    userId,
-    profile,
-    shipmentId,
-    driverId,
-    deviceFrom
 ) {
+    const { shipmentId, driverId } = req.body;
+    const { userId, profile } = req.user;
+    const { deviceFrom } = getHeaders(req);
     let hoy = new Date();
     hoy.setDate(hoy.getDate() - 3);
     hoy = hoy.toISOString().split("T")[0];

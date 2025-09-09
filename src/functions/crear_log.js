@@ -1,5 +1,5 @@
-import { executeQueryFromPool } from "../../db.js";
-import { logGreen } from "./logsCustom.js";
+import { executeQueryFromPool, logGreen } from "lightdata-tools";
+import { poolLocal } from "../../db.js";
 
 export async function crearLog(
   empresa,
@@ -26,6 +26,6 @@ export async function crearLog(
     exito,
   ];
 
-  await executeQueryFromPool(sqlLog, values);
+  await executeQueryFromPool(poolLocal, sqlLog, values);
   logGreen(`Log creado: ${JSON.stringify(values)}`);
 }

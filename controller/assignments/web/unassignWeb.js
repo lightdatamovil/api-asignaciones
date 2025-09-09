@@ -1,13 +1,11 @@
-import { executeQuery } from "../../db.js";
-import { getShipmentIdFromQr } from "../../src/functions/getShipmentIdFromQr.js";
-import { logCyan } from "../../src/functions/logsCustom.js";
-import { insertAsignacionesDB } from "../functions/insertAsignacionesDB.js";
+import { executeQuery, getHeaders, logCyan } from "lightdata-tools";
+import { insertAsignacionesDB } from "../../functions/insertAsignacionesDB.js";
 
-export async function desasignar(dbConnection, company, userId, body, deviceFrom) {
 
-    const dataQr = body.dataQr;
-
-    const shipmentId = await getShipmentIdFromQr(company.did, dataQr);
+export async function desasignar_web(dbConnection, req, company) {
+    const { shipmentId } = req.body;
+    const { userId } = req.user;
+    const { deviceFrom } = getHeaders(req);
 
     const sqlOperador =
         "SELECT operador, estado FROM envios_asignaciones WHERE didEnvio = ? AND superado = 0 AND elim = 0";
@@ -53,13 +51,8 @@ export async function desasignar(dbConnection, company, userId, body, deviceFrom
     // Actualizar asignaciones
     await executeQuery(
         dbConnection,
-        `UPDATE envios_asignaciones SET did=${resultInsertQuery.insertId} WHERE superado=0 AND elim=0 AND didEnvio = ?`,
+        `UPDATE envios_asignaciones SET superado=1, did=${resultInsertQuery.insertId} WHERE superado=0 AND elim=0 AND didEnvio = ?`,
         [shipmentId]
-    );
-    await executeQuery(
-        dbConnection,
-        `UPDATE envios_asignaciones SET superado=1 WHERE superado=0 AND elim=0 AND didEnvio = ? AND id != ?`,
-        [shipmentId, resultInsertQuery.insertId]
     );
 
     // Actualizar historial

@@ -1,17 +1,16 @@
-import { checkIfFulfillment, executeQuery, logCyan } from "lightdata-tools";
-import { crearTablaAsignaciones } from "../functions/crearTablaAsignaciones.js";
-import { crearUsuario } from "../functions/crearUsuario.js";
-import { insertAsignacionesDB } from "../functions/insertAsignacionesDB.js";
-
+import { checkIfFulfillment, executeQuery, getHeaders, logCyan } from "lightdata-tools";
+import { crearTablaAsignaciones } from "../../functions/crearTablaAsignaciones.js";
+import { crearUsuario } from "../../functions/crearUsuario.js";
+import { insertAsignacionesDB } from "../../functions/insertAsignacionesDB.js";
 
 export async function asignar_web(
     dbConnection,
+    req,
     company,
-    userId,
-    shipmentId,
-    driverId,
-    deviceFrom
 ) {
+    const { shipmentId, driverId } = req.body;
+    const { userId } = req.user;
+    const { deviceFrom } = getHeaders(req);
     await checkIfFulfillment(dbConnection, shipmentId);
 
     const sqlAsignado = `SELECT id, estado FROM envios_asignaciones WHERE superado=0 AND elim<>1 AND didEnvio = ? AND operador = ?`;

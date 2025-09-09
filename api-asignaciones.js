@@ -2,7 +2,7 @@ import express, { json, urlencoded } from 'express';
 import asignaciones from './routes/assignments.js';
 import { redisClient } from './db.js';
 import cors from 'cors';
-import { logBlue } from './src/functions/logsCustom.js';
+import { logBlue } from 'lightdata-tools';
 
 const app = express();
 

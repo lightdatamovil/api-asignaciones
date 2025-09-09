@@ -1,4 +1,5 @@
-import { executeQueryFromPool } from "../../db.js";
+import { executeQueryFromPool } from "lightdata-tools";
+import { poolLocal } from "../../db.js";
 
 export async function insertAsignacionesDB(
   companyId,
@@ -10,16 +11,16 @@ export async function insertAsignacionesDB(
 ) {
 
   const checkSql = `SELECT id FROM asignaciones_${companyId} WHERE didenvio = ? AND superado = 0`;
-  const existingRecords = await executeQueryFromPool(checkSql, [
+  const existingRecords = await executeQueryFromPool(poolLocal, checkSql, [
     shipmentId,
   ]);
 
   if (existingRecords.length > 0) {
     const updateSql = `UPDATE asignaciones_${companyId} SET superado = 1 WHERE id = ?`;
-    await executeQueryFromPool(updateSql, [existingRecords[0].id]);
+    await executeQueryFromPool(poolLocal, updateSql, [existingRecords[0].id]);
 
     const insertSql = `INSERT INTO asignaciones_${companyId} (didenvio, chofer, estado, quien, desde) VALUES (?, ?, ?, ?, ?)`;
-    await executeQueryFromPool(insertSql, [
+    await executeQueryFromPool(poolLocal, insertSql, [
       shipmentId,
       driverId,
       shipmentState,
@@ -28,7 +29,7 @@ export async function insertAsignacionesDB(
     ]);
   } else {
     const insertSql = `INSERT INTO asignaciones_${companyId} (didenvio, chofer, estado, quien, desde) VALUES (?, ?, ?, ?, ?)`;
-    await executeQueryFromPool(insertSql, [
+    await executeQueryFromPool(poolLocal, insertSql, [
       shipmentId,
       driverId,
       shipmentState,

@@ -1,224 +1,88 @@
 import { Router } from "express";
-import { verifyParameters } from "../src/functions/verifyParameters.js";
-import { getCompanyById, getProdDbConfig } from "../db.js";
-import { logPurple, logRed } from "../src/functions/logsCustom.js";
-import { crearLog } from "../src/functions/createLog.js";
-import CustomException from "../classes/custom_exception.js";
-import mysql2 from "mysql2";
-import { asignar } from "../controller/assignments/assign.js";
-import { desasignar } from "../controller/assignments/unassign.js";
-import { verifyAssignment } from "../controller/assignments/verifyAssignment.js";
-import { asignar_web } from "../controller/assignments/assign_web.js";
-import { verificarAsignacionWeb } from "../controller/assignments/verificarAsignacionWeb.js";
-import { desasignar_web } from "../controller/assignments/unassignWeb.js";
-import { buildHandler } from "./_handler.js";
+import { asignar } from "../controller/assignments/app/assign.js";
+import { desasignar } from "../controller/assignments/app/unassign.js";
+import { verifyAssignment } from "../controller/assignments/app/verifyAssignment.js";
+import { buildHandlerWrapper } from "../src/functions/build_handler_wrapper.js";
+import { verificarAsignacionWeb } from "../controller/assignments/web/verificarAsignacionWeb.js";
+import { asignar_web } from "../controller/assignments/web/assign_web.js";
+import { desasignar_web } from "../controller/assignments/web/unassignWeb.js";
+import { Status } from "lightdata-tools";
 
 const asignaciones = Router();
 
 asignaciones.post(
   '/asignar',
-  buildHandler({
-    required: [
-      "dataQr",
-      "driverId",
-    ],
+  buildHandlerWrapper({
+    required: ["dataQr", "driverId"],
     controller: async ({ db, res, req, company }) => {
-      const { companyId, userId, profile } = req.user;
-      const { dataQr, driverId, deviceFrom } = req.body;
+      const { companyId, userId } = req.user;
       let result;
       if (companyId == 12 && userId == 49) {
-        return res.status(400).json({ message: "Comunicarse con la logística." });
+        return res.status(Status.badRequest).json({ message: "Comunicarse con la logística." });
       }
       if (company.did == 4) {
-        result = await verifyAssignment(
-          db,
-          company,
-          userId,
-          profile,
-          dataQr,
-          driverId,
-          deviceFrom,
-          req.body
-        );
+        result = await verifyAssignment(db, req, company);
       } else {
-        result = await asignar(
-          db,
-          company,
-          userId,
-          dataQr,
-          driverId,
-          deviceFrom
-        );
+        result = await asignar(db, req, company);
       }
       return result;
     },
   })
 );
 
-asignaciones.post("/desasignar", async (req, res) => {
-  const startTime = performance.now();
-  const errorMessage = verifyParameters(req.body, ["dataQr", "deviceFrom"]);
+asignaciones.post(
+  '/desasignar',
+  buildHandlerWrapper({
+    required: ["dataQr"],
+    controller: async ({ db, company, res, req }) => {
+      const { companyId, userId } = req.user;
 
-  if (errorMessage) {
-    return res.status(400).json({ message: errorMessage });
-  }
+      if (companyId == 12 && userId == 49) {
+        return res.status(Status.badRequest).json({ message: "Comunicarse con la logística." });
+      }
+      const result = await desasignar(db, company);
+      return result;
+    },
+  })
+);
 
-  const { companyId, userId, profile, deviceFrom } = req.body;
 
-  if (companyId == 12 && userId == 49) {
-    return res.status(400).json({ message: "Comunicarse con la logística." });
-  }
+asignaciones.post(
+  '/asignar-web',
+  buildHandlerWrapper({
+    required: ["shipmentId", "driverId"],
+    controller: async ({ db, res, req, company }) => {
+      const { companyId, userId } = req.user;
+      let result;
+      if (companyId == 12 && userId == 49) {
+        return res.status(Status.badRequest).json({ message: "Comunicarse con la logística." });
+      }
+      if (company.did == 4) {
 
-  const company = await getCompanyById(companyId);
+        result = await verificarAsignacionWeb(db, req, company);
+      } else {
+        result = await asignar_web(db, req, company);
+      }
+      return result;
+    },
+  })
+);
 
-  const dbConfig = getProdDbConfig(company);
-  const dbConnection = mysql2.createConnection(dbConfig);
-  dbConnection.connect();
+asignaciones.post(
+  '/desasignar',
+  buildHandlerWrapper({
+    required: ["dataQr"],
+    controller: async ({ db, company, res, req }) => {
+      const { companyId, userId } = req.user;
 
-  try {
-
-    const result = await desasignar(
-      dbConnection,
-      company,
-      userId,
-      req.body,
-      deviceFrom
-    );
-
-    crearLog(companyId, userId, profile, req.body, performance.now() - startTime, JSON.stringify(result), "/desasignar", "api", true);
-    res.status(200).json(result);
-  } catch (error) {
-    if (error instanceof CustomException) {
-      logRed(`Error 400 en asignaciones: ${error} `);
-      crearLog(companyId, userId, profile, req.body, performance.now() - startTime, JSON.stringify(error), "/desasignar", "api", false);
-      res.status(400).json(error);
-    } else {
-      logRed(`Error 500 en asignaciones: ${error} `);
-      crearLog(companyId, userId, profile, req.body, performance.now() - startTime, JSON.stringify(error), "/desasignar", "api", false);
-      res.status(500).json({ title: 'Error interno del servidor', message: 'Unhandled Error', stack: error.stack });
-    }
-  } finally {
-    dbConnection.end();
-    logPurple(`Tiempo de ejecución: ${performance.now() - startTime} ms`);
-  }
-});
-
-asignaciones.post("/asignar-web", async (req, res) => {
-  const startTime = performance.now();
-  const errorMessage = verifyParameters(req.body, [
-    "shipmentId",
-    "deviceFrom",
-  ]);
-
-  if (errorMessage) {
-    return res.status(400).json({ message: errorMessage });
-  }
-
-  const { companyId, userId, shipmentId, driverId, deviceFrom, profile } = req.body;
-
-  if (companyId == 12 && userId == 49) {
-    return res.status(400).json({ message: "Comunicarse con la logística." });
-  }
-
-  const company = await getCompanyById(companyId);
-
-  const dbConfig = getProdDbConfig(company);
-  const dbConnection = mysql2.createConnection(dbConfig);
-  dbConnection.connect();
-
-  try {
-    let result;
-
-    if (company.did == 4) {
-
-      result = await verificarAsignacionWeb(
-        dbConnection,
-        company,
-        userId,
-        profile,
-        shipmentId,
-        driverId,
-        deviceFrom,
-        req.body
-      );
-    } else {
-      result = await asignar_web(
-        dbConnection,
-        company,
-        userId,
-        shipmentId,
-        driverId,
-        deviceFrom,
-        startTime
-      );
-    }
-
-    crearLog(companyId, userId, profile, req.body, performance.now() - startTime, JSON.stringify(result), "/asignar", "api", true);
-    res.status(200).json(result);
-  } catch (error) {
-    if (error instanceof CustomException) {
-      logRed(`Error 400 en asignaciones: ${error} `);
-      crearLog(companyId, userId, profile, req.body, performance.now() - startTime, JSON.stringify(error), "/asignar", "api", false);
-      res.status(400).json(error);
-    } else {
-      logRed(`Error 500 en asignaciones: ${error} `);
-      crearLog(companyId, userId, profile, req.body, performance.now() - startTime, JSON.stringify(error), "/asignar", "api", false);
-      res.status(500).json({ title: 'Error interno del servidor', message: 'Unhandled Error', stack: error.stack });
-    }
-  } finally {
-    dbConnection.end();
-    logPurple(`Tiempo de ejecución: ${performance.now() - startTime} ms`);
-  }
-});
-
-asignaciones.post("/desasignar-web", async (req, res) => {
-  const startTime = performance.now();
-  const errorMessage = verifyParameters(req.body, ["shipmentId", "deviceFrom"]);
-
-  if (errorMessage) {
-    return res.status(400).json({ message: errorMessage });
-  }
-
-  const { companyId, userId, profile, deviceFrom, shipmentId } = req.body;
-
-  if (companyId == 12 && userId == 49) {
-    return res.status(400).json({ message: "Comunicarse con la logística." });
-  }
-
-  const company = await getCompanyById(companyId);
-
-  const dbConfig = getProdDbConfig(company);
-  const dbConnection = mysql2.createConnection(dbConfig);
-  dbConnection.connect();
-
-  try {
-
-    const result = await desasignar_web(
-      dbConnection,
-      company,
-      userId,
-      shipmentId,
-      deviceFrom
-    );
-
-    crearLog(companyId, userId, profile, req.body, performance.now() - startTime, JSON.stringify(result), "/desasignar", "api", true);
-    res.status(200).json(result);
-  } catch (error) {
-    if (error instanceof CustomException) {
-      logRed(`Error 400 en asignaciones: ${error} `);
-      crearLog(companyId, userId, profile, req.body, performance.now() - startTime, JSON.stringify(error), "/desasignar", "api", false);
-      res.status(400).json(error);
-    } else {
-      logRed(`Error 500 en asignaciones: ${error} `);
-      crearLog(companyId, userId, profile, req.body, performance.now() - startTime, JSON.stringify(error), "/desasignar", "api", false);
-      res.status(500).json({ title: 'Error interno del servidor', message: 'Unhandled Error', stack: error.stack });
-    }
-  } finally {
-    dbConnection.end();
-    logPurple(`Tiempo de ejecución: ${performance.now() - startTime} ms`);
-  }
-});
-
+      if (companyId == 12 && userId == 49) {
+        return res.status(Status.badRequest).json({ message: "Comunicarse con la logística." });
+      }
+      const result = await desasignar_web(db, req, company);
+      return result;
+    },
+  })
+);
 
 
 export default asignaciones;
