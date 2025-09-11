@@ -1,5 +1,6 @@
 import { executeQuery } from "../../db.js";
 import { checkIfFulfillment } from "../../src/functions/checkIfFulfillment.js";
+import { getFechaConHoraLocalDePais } from "../../src/functions/getFechaConHoraLocalByPais.js";
 import { logCyan } from "../../src/functions/logsCustom.js";
 import { crearTablaAsignaciones } from "../functions/crearTablaAsignaciones.js";
 import { crearUsuario } from "../functions/crearUsuario.js";
@@ -61,6 +62,35 @@ export async function asignar_web(
     logCyan("Inserto en la tabla de asignaciones");
 
     const did = result.insertId;
+
+
+    if (estado == 5 || estado == 9) {
+        const fecha = getFechaConHoraLocalDePais(company.pais);
+        console.log(fecha, "FDSF");
+
+        const query = `INSERT INTO envios_historial (didEnvio, estado, quien, desde,didCadete,fecha) VALUES (?, ?, ?, ?, ?,?)`;
+        const insertHistorial = await executeQuery(dbConnection, query, [
+            shipmentId,
+            estado,
+            userId,
+            deviceFrom,
+            driverId,
+            fecha
+
+
+
+        ]);
+        logCyan("Inserto en el historial el cambio de estado a 1");
+        const queryUpdate = `UPDATE envios_historial SET superado = 1 WHERE superado=0 AND elim = 0 AND didEnvio = ? AND id != ?`;
+        await executeQuery(dbConnection, queryUpdate, [
+            shipmentId,
+            insertHistorial.insertId,
+        ]);
+        logCyan("Actualizo el historial para que el anterior quede superado");
+
+    }
+
+
 
     const queries = [
         { sql: `UPDATE envios_asignaciones SET did = ? WHERE superado=0 AND elim<>1 AND id = ?`, values: [did, did], },
