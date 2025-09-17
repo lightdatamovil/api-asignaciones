@@ -1,31 +1,37 @@
-import { executeQueryFromPool, logGreen } from "lightdata-tools";
+import { executeQueryFromPool, getHeaders, logGreen, logPurple } from "lightdata-tools";
 import { poolLocal } from "../../db.js";
 
-export async function crearLog(
-  empresa,
-  usuario,
-  perfil,
-  body,
-  tiempo,
-  resultado,
-  endpoint,
-  metodo,
-  exito
-) {
-  const sqlLog = `INSERT INTO logs_v2 (empresa, usuario, perfil, body, tiempo, resultado, endpoint, metodo, exito) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-
+export async function crearLog(req, tiempo, resultado, exito) {
+  const { appVersion, androidVersion, model, deviceId, brand, deviceFrom } = getHeaders(req);
+  const { companyId, userId, profile } = req.user;
+  const sql = `
+  INSERT INTO \`logs\`
+    (\`empresa\`, \`usuario\`, \`perfil\`, \`body\`, \`resultado\`, \`tiempo\`, \`exito\`,
+     \`device-from\`, \`app-version\`, \`android-version\`, \`modelo-dispositivo\`,
+     \`id-dispositivo\`, \`marca-dispositivo\`)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`;
   const values = [
-    empresa,
-    usuario,
-    perfil,
-    JSON.stringify(body),
+    companyId,
+    userId,
+    profile,
+    JSON.stringify(req.body),
+    resultado,
     tiempo,
-    JSON.stringify(resultado),
-    endpoint,
-    metodo,
     exito,
+    deviceFrom,
+    appVersion,
+    androidVersion,
+    model,
+    deviceId,
+    brand,
   ];
 
-  await executeQueryFromPool(poolLocal, sqlLog, values);
-  logGreen(`Log creado: ${JSON.stringify(values)}`);
+  await executeQueryFromPool(poolLocal, sql, values);
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  const fechaFormateada = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  logGreen(`${fechaFormateada} Log creado correctamente`);
+  logGreen(`Endpoint: ${req.originalUrl} | Usuario: ${userId} | Empresa: ${companyId} | Perfil: ${profile}`);
+  logPurple(`En ${tiempo} ms | Éxito: ${exito ? "sí" : "no"}`);
 }

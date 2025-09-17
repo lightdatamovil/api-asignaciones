@@ -1,7 +1,8 @@
-import { checkIfFulfillment, executeQuery, getHeaders, logCyan } from "lightdata-tools";
+import { checkIfFulfillment, executeQuery, getHeaders, logCyan, sendShipmentStateToStateMicroserviceAPI } from "lightdata-tools";
 import { crearTablaAsignaciones } from "../../functions/crearTablaAsignaciones.js";
 import { crearUsuario } from "../../functions/crearUsuario.js";
 import { insertAsignacionesDB } from "../../functions/insertAsignacionesDB.js";
+import { urlEstadosMicroservice } from "../../../db.js";
 
 export async function asignar_web(
     dbConnection,
@@ -58,7 +59,9 @@ export async function asignar_web(
     logCyan("Inserto en la tabla de asignaciones");
 
     const did = result.insertId;
-
+    if (estado == 5 || estado == 9) {
+        sendShipmentStateToStateMicroserviceAPI(urlEstadosMicroservice, company, userId, shipmentId, estado);
+    }
     const queries = [
         { sql: `UPDATE envios_asignaciones SET did = ? WHERE superado=0 AND elim<>1 AND id = ?`, values: [did, did], },
         { sql: `UPDATE envios_asignaciones SET superado = 1 WHERE superado=0 AND elim<>1 AND didEnvio = ? AND did != ?`, values: [shipmentId, did], },

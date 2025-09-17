@@ -12,7 +12,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "lightdata-tools": "^1.4.56",
+    "lightdata-tools": "^1.4.60",
     "mysql2": "^3.14.1",
     "redis": "^4.6.13"
   },

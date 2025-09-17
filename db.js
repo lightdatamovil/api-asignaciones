@@ -1,6 +1,6 @@
 import redis from 'redis';
 import dotenv from 'dotenv';
-import mysql2 from 'mysql2';
+import mysql2 from 'mysql2/promise';
 import { CompaniesService } from 'lightdata-tools';
 
 dotenv.config({ path: process.env.ENV_FILE || ".env" });
@@ -20,6 +20,14 @@ const asignacionesDBPort = process.env.ASIGNACIONES_DB_PORT;
 /// Se usa para la conexion a la base de datos de produccion de cada endpoint
 export const hostProductionDb = process.env.PRODUCTION_DB_HOST;
 export const portProductionDb = process.env.PRODUCTION_DB_PORT;
+
+// JWT
+export const jwtSecret = process.env.JWT_SECRET;
+export const jwtIssuer = process.env.JWT_ISSUER;
+export const jwtAudience = process.env.JWT_AUDIENCE;
+export const jwtExpiresIn = process.env.JWT_EXPIRES_IN || '1h';
+
+export const urlEstadosMicroservice = process.env.URL_ESTADOS_MICROSERVICE;
 
 export const redisClient = redis.createClient({
     socket: {

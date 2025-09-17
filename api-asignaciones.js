@@ -1,8 +1,8 @@
 import express, { json, urlencoded } from 'express';
 import asignaciones from './routes/assignments.js';
-import { redisClient } from './db.js';
+import { redisClient, jwtSecret, jwtIssuer, jwtAudience } from './db.js';
 import cors from 'cors';
-import { logBlue } from 'lightdata-tools';
+import { logBlue, verifyToken } from 'lightdata-tools';
 
 const app = express();
 
@@ -12,9 +12,6 @@ app.use(json());
 app.use(cors())
 
 const PORT = process.env.PORT;
-
-app.use("/api/asignaciones", asignaciones)
-
 app.get('/ping', (req, res) => {
   const currentDate = new Date();
   currentDate.setHours(currentDate.getHours()); // Resta 3 horas
@@ -30,6 +27,9 @@ app.get('/ping', (req, res) => {
     hora: formattedTime
   });
 });
+app.use(verifyToken({ jwtSecret, jwtIssuer, jwtAudience }))
+app.use("/api/asignaciones", asignaciones)
+
 
 await redisClient.connect();
 
