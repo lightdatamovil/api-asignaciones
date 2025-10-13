@@ -1,10 +1,11 @@
 import { executeQuery } from "lightdata-tools";
+import { executeQueryFromPool } from "../../db";
 
 
 export async function choferEsLogistica(dbConnection, driver) {
     console.log(driver);
     const query = `SELECT codvinculacion FROM sistema_usuarios_accesos WHERE usuario = ? AND superado = 0 AND elim = 0 limit 1`;
-    const verify = await executeQuery(dbConnection, query, [driver], true);
+    const verify = await executeQueryFromPool(dbConnection, query, [driver], true);
     console.log("termine la query");
     console.log("resultado", verify[0]);
 
