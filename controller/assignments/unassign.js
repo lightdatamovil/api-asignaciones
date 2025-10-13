@@ -1,17 +1,30 @@
-import { executeQuery } from "../../db.js";
+import { executeQuery, getCompanyByCode } from "../../db.js";
+import { debugHttpError } from "../../src/functions/debugEndpoint.js";
 import { getShipmentIdFromQr } from "../../src/functions/getShipmentIdFromQr.js";
 import { logCyan } from "../../src/functions/logsCustom.js";
 import { insertAsignacionesDB } from "../functions/insertAsignacionesDB.js";
+import { choferEsLogistica } from "../../src/functions/choferEsLogistica.js";
+
+const URL_ELIMINAR_ENVIO = "https://altaenvios.lightdata.com.ar/api/eliminarEnvio";
 
 export async function desasignar(dbConnection, company, userId, body, deviceFrom) {
 
     const dataQr = body.dataQr;
+    const quien = userId;
 
     const shipmentId = await getShipmentIdFromQr(company.did, dataQr);
+    if (!shipmentId) {
+
+        return {
+            feature: "asignacion",
+            success: false,
+            message: "Error al obtener el id del envio",
+        };
+    }
 
     const sqlOperador =
         "SELECT operador, estado FROM envios_asignaciones WHERE didEnvio = ? AND superado = 0 AND elim = 0";
-    const result = await executeQuery(dbConnection, sqlOperador, [shipmentId]);
+    const result = await executeQuery(dbConnection, sqlOperador, [shipmentId], true);
 
     const operador = result.length > 0 ? result[0].operador : 0;
 
@@ -24,14 +37,41 @@ export async function desasignar(dbConnection, company, userId, body, deviceFrom
     }
     logCyan("El paquete está asignado");
 
-    if (!shipmentId) {
+    const operadorEsLogistica = await choferEsLogistica(dbConnection, operador);
 
-        return {
-            feature: "asignacion",
-            success: false,
-            message: "Error al obtener el id del envio",
+    if (operadorEsLogistica) {
+
+        console.log(operadorEsLogistica);
+
+        //traer de redis el did de la compania externa por el codvinculacion
+        const companiaExterna = await getCompanyByCode(operadorEsLogistica.codvinculacion);
+
+        // verifico en envios historial el didlocal del envio  shipmentId -- 
+        const shipmentIdExterno = await getShipmentIdFromQr(companiaExterna.did, dataQr);
+
+        // envio al microservicio eliminar envio de todas las tablas 
+        const payload = {
+            idEmpresa: companiaExterna.did,
+            did: shipmentIdExterno,
+            userId: quien,
+            desde: deviceFrom,
         };
+        console.log(payload);
+        try {
+            await fetch(URL_ELIMINAR_ENVIO, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(payload),
+            });
+        } catch (error) {
+            debugHttpError(error, "desasignar - eliminar envio");
+        }
+
     }
+
+
     if (company.did == 4) {
         const setEstadoAsignacion =
             "UPDATE envios SET estadoAsignacion = 0 WHERE superado = 0 AND elim=0 AND did = ?";

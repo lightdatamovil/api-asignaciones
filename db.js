@@ -2,6 +2,7 @@ import redis from 'redis';
 import dotenv from 'dotenv';
 import mysql2 from 'mysql2';
 import { logRed, logYellow } from './src/functions/logsCustom.js';
+import CustomException from './classes/custom_exception.js';
 
 dotenv.config({ path: process.env.ENV_FILE || ".env" });
 
@@ -102,33 +103,26 @@ export async function getCompanyById(companyId) {
     return company;
 }
 
-export async function executeQuery(connection, query, values, log) {
-    // Utilizamos connection.format para obtener la query completa con valores
-    const formattedQuery = connection.format(query, values);
-
-    try {
-        return new Promise((resolve, reject) => {
-            connection.query(query, values, (err, results) => {
-                if (log) {
-                    logYellow(`Ejecutando query: ${formattedQuery}`);
-                }
-                if (err) {
-                    if (log) {
-                        logRed(`Error en executeQuery: ${err.message} en query: ${formattedQuery}`);
-                    }
-                    reject(err);
-                } else {
-                    if (log) {
-                        logYellow(`Query ejecutado con éxito: ${formattedQuery} - Resultados: ${JSON.stringify(results)}`);
-                    }
-                    resolve(results);
-                }
-            });
-        });
-    } catch (error) {
-        logRed(`Error en executeQuery: ${error.stack}`);
-        throw error;
+export async function executeQuery(dbConnection, query, values, log = false) {
+    if (log) {
+        logYellow(`Ejecutando query: ${query} con valores: ${values}`);
     }
+    return new Promise((resolve, reject) => {
+        dbConnection.query(query, values, (err, results) => {
+            if (err) {
+                if (log) {
+                    logRed(err);
+                    logRed(`Error en executeQuery: ${err.message}`);
+                }
+                reject(err);
+            } else {
+                if (log) {
+                    logYellow(`Query ejecutado con éxito: ${JSON.stringify(results)}`);
+                }
+                resolve(results);
+            }
+        });
+    });
 }
 
 export function executeQueryFromPool(query, values = [], log = false) {
@@ -146,4 +140,31 @@ export function executeQueryFromPool(query, values = [], log = false) {
             resolve(results);
         });
     });
+}
+
+
+export async function getCompanyByCode(companyCode) {
+    let company;
+
+    if (Object.keys(companiesList).length === 0) {
+        await loadCompaniesFromRedis();
+    }
+
+    for (const key in companiesList) {
+        if (Object.prototype.hasOwnProperty.call(companiesList, key)) {
+            const currentCompany = companiesList[key];
+            if (String(currentCompany.codigo) === String(companyCode)) {
+                company = currentCompany;
+                break;
+            }
+        }
+    }
+    if (company === undefined) {
+        throw new CustomException({
+            title: "Empresa no encontrada",
+            message: `No se encontró la empresa con el código: "${companyCode}"`,
+            stack: ''
+        });
+    }
+    return company;
 }
