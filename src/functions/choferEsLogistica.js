@@ -1,5 +1,5 @@
 
-import { executeQueryFromPool } from "../../db";
+import { executeQueryFromPool } from "../../db.js";
 
 
 export async function choferEsLogistica(dbConnection, driver) {
