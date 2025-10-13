@@ -1,4 +1,4 @@
-import { executeQuery } from "lightdata-tools";
+
 import { executeQueryFromPool } from "../../db";
 
 
