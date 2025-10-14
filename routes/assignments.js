@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { verifyParameters } from "../src/functions/verifyParameters.js";
 import { getCompanyById, getProdDbConfig } from "../db.js";
-import { logPurple, logRed } from "../src/functions/logsCustom.js";
+import { logBlue, logPurple, logRed } from "../src/functions/logsCustom.js";
 import { crearLog } from "../src/functions/createLog.js";
 import CustomException from "../classes/custom_exception.js";
 import mysql2 from "mysql2";
@@ -35,11 +35,11 @@ asignaciones.post("/asignar", async (req, res) => {
   }
 
   const company = await getCompanyById(companyId);
-
+  logBlue("Tiempo de obtención de la compañía: " + (performance.now() - startTime) + " ms");
   const dbConfig = getProdDbConfig(company);
   const dbConnection = mysql2.createConnection(dbConfig);
   dbConnection.connect();
-
+  logBlue("Tiempo de conexión a la base de datos: " + (performance.now() - startTime) + " ms");
   try {
     let result;
 
