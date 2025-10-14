@@ -44,11 +44,10 @@ export async function asignar(
 
     const estado = estadoRows[0].estado;
 
-    await crearTablaAsignaciones(company.did);
-    logCyan("Creo la tabla de asignaciones");
-
-    await crearUsuario(company.did);
-    logCyan("Creo el usuario");
+    await Promise.allSettled([
+        crearTablaAsignaciones(company.did),
+        crearUsuario(company.did),
+    ]);
 
     const insertSql = `INSERT INTO envios_asignaciones (did, operador, didEnvio, estado, quien, desde) VALUES (?, ?, ?, ?, ?, ?)`;
     const result = await executeQuery(dbConnection, insertSql, [
@@ -76,9 +75,7 @@ export async function asignar(
     ];
 
 
-    for (const { sql, values } of queries) {
-        await executeQuery(dbConnection, sql, values);
-    }
+    await Promise.all(queries.map(({ sql, values }) => executeQuery(dbConnection, sql, values)));
     logCyan("Updateo las tablas");
 
     await insertAsignacionesDB(

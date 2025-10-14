@@ -13,13 +13,13 @@ export function logGreen(message) {
 }
 
 export function logRed(message) {
-  // if (isLocal) {
-  //   console.log(
-  //     `\x1b[31m%s\x1b[0m`,
-  //     `❌ ${message}
-  // --------------------------------------------------`
-  //   );
-  // }
+  if (isLocal) {
+    console.log(
+      `\x1b[31m%s\x1b[0m`,
+      `❌ ${message}
+  --------------------------------------------------`
+    );
+  }
 }
 
 export function logBlue(message) {
