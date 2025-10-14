@@ -25,7 +25,7 @@ export async function getShipmentIdFromQr(companyId, dataQr) {
         const beforeRequest = performance.now();
         result = await axios.post("https://apimovil2.lightdata.app/api/qr/get-shipment-id", payload);
         const afterRequest = performance.now();
-        logBlue(`[getShipmentIdFromQr] Request completada en ${(afterRequest - beforeRequest).toFixed(2)} ms para el envio ${dataQr}`);
+        logBlue(`[getShipmentIdFromQr] Request completada en ${(afterRequest - beforeRequest).toFixed(2)} ms para el envio ${dataQr.id || dataQr.did}`);
     } catch (error) {
         logRed(`[getShipmentIdFromQr] Error durante request: ${(performance.now() - startTime).toFixed(2)} ms`);
         throw new CustomException({
