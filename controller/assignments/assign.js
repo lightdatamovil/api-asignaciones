@@ -14,10 +14,7 @@ export async function asignar(
     driverId,
     deviceFrom
 ) {
-    const startTime = performance.now();
-    logBlue(`Tiempo de inicio de asignar: ${performance.now() - startTime} ms`);
     const shipmentId = await getShipmentIdFromQr(company.did, dataQr);
-    logBlue(`Tiempo de getShipmentIdFromQr: ${performance.now() - startTime} ms`);
     await checkIfFulfillment(dbConnection, shipmentId);
     if (company.did != 4) {
         const sqlAsignado = `SELECT id FROM envios_asignaciones WHERE superado=0 AND elim=0 AND didEnvio = ? AND operador = ?`;

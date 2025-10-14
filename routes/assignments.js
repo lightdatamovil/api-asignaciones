@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { verifyParameters } from "../src/functions/verifyParameters.js";
 import { getCompanyById, getProdDbConfig } from "../db.js";
-import { logBlue, logPurple, logRed } from "../src/functions/logsCustom.js";
+import { logPurple, logRed } from "../src/functions/logsCustom.js";
 import { crearLog } from "../src/functions/createLog.js";
 import CustomException from "../classes/custom_exception.js";
 import mysql2 from "mysql2";
