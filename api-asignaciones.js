@@ -3,6 +3,7 @@ import asignaciones from './routes/assignments.js';
 import { redisClient } from './db.js';
 import cors from 'cors';
 import { logBlue } from './src/functions/logsCustom.js';
+import { getAllActiveLocal } from './src/functions/dbList.js';
 
 const app = express();
 
@@ -30,7 +31,13 @@ app.get('/ping', (req, res) => {
     hora: formattedTime
   });
 });
-
+app.get('/active-db', (req, res) => {
+  try {
+    res.status(200).json(getAllActiveLocal());
+  } catch (e) {
+    res.status(500).json({ error: 'No se pudo obtener el estado local' });
+  }
+});
 await redisClient.connect();
 
 app.listen(PORT, () => {
