@@ -15,7 +15,7 @@ export async function asignar(
     deviceFrom
 ) {
     const startTime = performance.now();
-    logBlue("Tiempo de inicio de asignar: " + startTime + " ms");
+    logBlue(`Tiempo de inicio de asignar: ${performance.now() - startTime} ms`);
     const shipmentId = await getShipmentIdFromQr(company.did, dataQr);
     logBlue(`Tiempo de getShipmentIdFromQr: ${performance.now() - startTime} ms`);
     await checkIfFulfillment(dbConnection, shipmentId);
@@ -105,6 +105,5 @@ export async function asignar(
         success: true,
         message: "Asignación realizada correctamente",
     };
-
     return resultado;
 }
