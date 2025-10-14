@@ -35,11 +35,11 @@ asignaciones.post("/asignar", async (req, res) => {
   }
 
   const company = await getCompanyById(companyId);
-  logBlue("Tiempo de obtención de la compañía: " + (performance.now() - startTime) + " ms");
+
   const dbConfig = getProdDbConfig(company);
   const dbConnection = mysql2.createConnection(dbConfig);
   dbConnection.connect();
-  logBlue("Tiempo de conexión a la base de datos: " + (performance.now() - startTime) + " ms");
+
   try {
     let result;
 

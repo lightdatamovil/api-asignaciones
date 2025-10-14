@@ -19,11 +19,9 @@ export async function asignar(
     const shipmentId = await getShipmentIdFromQr(company.did, dataQr);
     logBlue(`Tiempo de getShipmentIdFromQr: ${performance.now() - startTime} ms`);
     await checkIfFulfillment(dbConnection, shipmentId);
-    logBlue(`Tiempo de checkIfFulfillment: ${performance.now() - startTime} ms`);
     if (company.did != 4) {
         const sqlAsignado = `SELECT id FROM envios_asignaciones WHERE superado=0 AND elim=0 AND didEnvio = ? AND operador = ?`;
         const asignadoRows = await executeQuery(dbConnection, sqlAsignado, [shipmentId, driverId]);
-        logBlue(`Tiempo de consulta de envios_asignaciones: ${performance.now() - startTime} ms`);
         if (asignadoRows.length > 0) {
             return {
                 feature: "asignacion",
@@ -35,7 +33,6 @@ export async function asignar(
     logCyan("El paquete todavia no está asignado");
     const estadoQuery = `SELECT estado FROM envios WHERE superado=0 AND elim=0 AND did = ?`;
     const estadoRows = await executeQuery(dbConnection, estadoQuery, [shipmentId]);
-    logBlue(`Tiempo de consulta de estado del paquete: ${performance.now() - startTime} ms`);
     logCyan("Obtengo el estado del paquete");
 
     if (estadoRows.length === 0) {
@@ -52,7 +49,6 @@ export async function asignar(
         crearTablaAsignaciones(company.did),
         crearUsuario(company.did),
     ]);
-    logBlue(`Tiempo de creación de tabla y usuario: ${performance.now() - startTime} ms`);
     const insertSql = `INSERT INTO envios_asignaciones (did, operador, didEnvio, estado, quien, desde) VALUES (?, ?, ?, ?, ?, ?)`;
     const result = await executeQuery(dbConnection, insertSql, [
         "",
@@ -62,7 +58,6 @@ export async function asignar(
         userId,
         deviceFrom,
     ]);
-    logBlue(`Tiempo de inserción en envios_asignaciones: ${performance.now() - startTime} ms`);
     logCyan("Inserto en la tabla de asignaciones");
 
     const did = result.insertId;
@@ -82,7 +77,6 @@ export async function asignar(
 
     await Promise.all(queries.map(({ sql, values }, index) => {
         executeQuery(dbConnection, sql, values);
-        logBlue(`(${index}) Tiempo de ejecución de query: ${performance.now() - startTime} ms`);
     }));
     logCyan("Updateo las tablas");
 
@@ -94,7 +88,6 @@ export async function asignar(
         userId,
         deviceFrom
     );
-    logBlue(`Tiempo de insertAsignacionesDB: ${performance.now() - startTime} ms`);
     logCyan("Inserto en la base de datos individual de asignaciones");
 
     // await updateRedis(company.did, shipmentId, driverId);
