@@ -1,6 +1,6 @@
 import axios from "axios";
 import https from "https";
-import { logBlue, logRed } from "./logsCustom.js";
+import { logRed } from "./logsCustom.js";
 import CustomException from "../../classes/custom_exception.js";
 
 // 🔹 Agente HTTPS con keep-alive y hasta 100 conexiones simultáneas
@@ -33,41 +33,21 @@ export async function getShipmentIdFromQr(companyId, dataQr) {
         dataQr,
     };
 
-    logBlue(`[getShipmentIdFromQr] Inicio: ${performance.now() - startTime} ms`);
-
     const url = "https://apimovil2.lightdata.app/api/qr/get-shipment-id";
 
-    // 🔁 Intentar hasta 3 veces con backoff exponencial (0.5s, 1s, 2s)
-    let attempt = 0;
     let result;
-    while (attempt < 3) {
-        attempt++;
-        const attemptStart = performance.now();
-        try {
-            result = await axiosInstance.post(url, payload);
-            const duration = performance.now() - attemptStart;
-            logBlue(
-                `[getShipmentIdFromQr] Request completada en ${duration.toFixed(
-                    2
-                )} ms para el envío ${JSON.stringify(dataQr)} de la empresa ${companyId} (intento ${attempt})`
-            );
-            break; // Éxito → salir del bucle
-        } catch (error) {
-            const duration = performance.now() - attemptStart;
-            logRed(
-                `[getShipmentIdFromQr] Error en intento ${attempt}: ${error.code || error.message
-                } (${duration.toFixed(2)} ms)`
-            );
-            if (attempt >= 3) {
-                throw new CustomException({
-                    title: "Error al obtener el shipmentId",
-                    message: "No se pudo obtener el id del envío desde el QR.",
-                });
-            }
-            // espera incremental antes del próximo intento
-            const wait = 500 * Math.pow(2, attempt - 1);
-            await new Promise((r) => setTimeout(r, wait));
-        }
+    try {
+        result = await axiosInstance.post(url, payload);
+    } catch (error) {
+        logRed(
+            `[getShipmentIdFromQr] Error durante request: ${(performance.now() - startTime).toFixed(
+                2
+            )} ms (${error.code || error.message})`
+        );
+        throw new CustomException({
+            title: "Error al obtener el shipmentId",
+            message: "No se pudo obtener el id del envío desde el QR.",
+        });
     }
 
     const afterResponse = performance.now();
@@ -83,8 +63,6 @@ export async function getShipmentIdFromQr(companyId, dataQr) {
                 message: "No se pudo obtener el id del envío desde el QR.",
             });
         }
-
-        logBlue(`[getShipmentIdFromQr] Éxito total en ${(performance.now() - startTime).toFixed(2)} ms`);
         return body;
     }
 
