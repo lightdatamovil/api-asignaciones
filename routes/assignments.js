@@ -81,8 +81,8 @@ asignaciones.post("/asignar", async (req, res) => {
       res.status(500).json({ title: 'Error interno del servidor', message: 'Unhandled Error', stack: error.stack });
     }
   } finally {
-    dbConnection.end();
     decrActiveLocal(company.did);
+    dbConnection.end();
     logPurple(`Tiempo de ejecución: ${performance.now() - startTime} ms`);
   }
 });
@@ -130,8 +130,8 @@ asignaciones.post("/desasignar", async (req, res) => {
       res.status(500).json({ title: 'Error interno del servidor', message: 'Unhandled Error', stack: error.stack });
     }
   } finally {
-    dbConnection.end();
     decrActiveLocal(company.did);
+    dbConnection.end();
     logPurple(`Tiempo de ejecución: ${performance.now() - startTime} ms`);
   }
 });
@@ -200,8 +200,8 @@ asignaciones.post("/asignar-web", async (req, res) => {
       res.status(500).json({ title: 'Error interno del servidor', message: 'Unhandled Error', stack: error.stack });
     }
   } finally {
-    dbConnection.end();
     decrActiveLocal(company.did);
+    dbConnection.end();
     logPurple(`Tiempo de ejecución: ${performance.now() - startTime} ms`);
   }
 });
@@ -250,8 +250,8 @@ asignaciones.post("/desasignar-web", async (req, res) => {
       res.status(500).json({ title: 'Error interno del servidor', message: 'Unhandled Error', stack: error.stack });
     }
   } finally {
-    dbConnection.end();
     decrActiveLocal(company.did);
+    dbConnection.end();
     logPurple(`Tiempo de ejecución: ${performance.now() - startTime} ms`);
   }
 });
