@@ -1,3 +1,4 @@
+import { tr } from "zod/locales";
 import { executeQuery } from "../../db.js";
 import { checkIfFulfillment } from "../../src/functions/checkIfFulfillment.js";
 import { getShipmentIdFromQr } from "../../src/functions/getShipmentIdFromQr.js";
@@ -62,6 +63,10 @@ export async function asignar(
     logCyan("Inserto en la tabla de asignaciones");
 
     const did = result.insertId;
+
+    if (!did) {
+        throw new Error("Error en la asignacion");
+    }
 
     const queries = [
         { sql: `UPDATE envios_asignaciones SET did = ? WHERE superado=0 AND elim=0 AND id = ?`, values: [did, did] },
