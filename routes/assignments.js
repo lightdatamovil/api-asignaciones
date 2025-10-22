@@ -11,6 +11,7 @@ import { verifyAssignment } from "../controller/assignments/verifyAssignment.js"
 import { asignar_web } from "../controller/assignments/assign_web.js";
 import { verificarAsignacionWeb } from "../controller/assignments/verificarAsignacionWeb.js";
 import { desasignar_web } from "../controller/assignments/unassignWeb.js";
+import { decrActiveLocal, incrActiveLocal } from "../src/functions/dbList.js";
 
 const asignaciones = Router();
 
@@ -39,6 +40,7 @@ asignaciones.post("/asignar", async (req, res) => {
   const dbConfig = getProdDbConfig(company);
   const dbConnection = mysql2.createConnection(dbConfig);
   dbConnection.connect();
+  incrActiveLocal(company.did);
 
   try {
     let result;
@@ -79,6 +81,7 @@ asignaciones.post("/asignar", async (req, res) => {
       res.status(500).json({ title: 'Error interno del servidor', message: 'Unhandled Error', stack: error.stack });
     }
   } finally {
+    decrActiveLocal(company.did);
     dbConnection.end();
     logPurple(`Tiempo de ejecución: ${performance.now() - startTime} ms`);
   }
@@ -127,6 +130,7 @@ asignaciones.post("/desasignar", async (req, res) => {
       res.status(500).json({ title: 'Error interno del servidor', message: 'Unhandled Error', stack: error.stack });
     }
   } finally {
+    decrActiveLocal(company.did);
     dbConnection.end();
     logPurple(`Tiempo de ejecución: ${performance.now() - startTime} ms`);
   }
@@ -154,6 +158,7 @@ asignaciones.post("/asignar-web", async (req, res) => {
   const dbConfig = getProdDbConfig(company);
   const dbConnection = mysql2.createConnection(dbConfig);
   dbConnection.connect();
+  incrActiveLocal(company.did);
 
   try {
     let result;
@@ -195,6 +200,7 @@ asignaciones.post("/asignar-web", async (req, res) => {
       res.status(500).json({ title: 'Error interno del servidor', message: 'Unhandled Error', stack: error.stack });
     }
   } finally {
+    decrActiveLocal(company.did);
     dbConnection.end();
     logPurple(`Tiempo de ejecución: ${performance.now() - startTime} ms`);
   }
@@ -219,6 +225,7 @@ asignaciones.post("/desasignar-web", async (req, res) => {
   const dbConfig = getProdDbConfig(company);
   const dbConnection = mysql2.createConnection(dbConfig);
   dbConnection.connect();
+  incrActiveLocal(company.did);
 
   try {
 
@@ -243,6 +250,7 @@ asignaciones.post("/desasignar-web", async (req, res) => {
       res.status(500).json({ title: 'Error interno del servidor', message: 'Unhandled Error', stack: error.stack });
     }
   } finally {
+    decrActiveLocal(company.did);
     dbConnection.end();
     logPurple(`Tiempo de ejecución: ${performance.now() - startTime} ms`);
   }

@@ -1,8 +1,25 @@
 import axios from "axios";
+import https from "https";
 import { logRed } from "./logsCustom.js";
 import CustomException from "../../classes/custom_exception.js";
 
+// 🔹 Agente HTTPS con keep-alive y hasta 100 conexiones simultáneas
+const httpsAgent = new https.Agent({
+    keepAlive: true,
+    maxSockets: 100,
+    timeout: 10000, // tiempo máximo de socket en ms
+    family: 4, // fuerza IPv4, evita delay IPv6
+});
+
+// 🔹 Axios preconfigurado (usa el agente y timeout)
+const axiosInstance = axios.create({
+    httpsAgent,
+    timeout: 5000, // 5 segundos máximo por request
+});
+
 export async function getShipmentIdFromQr(companyId, dataQr) {
+    const startTime = performance.now();
+
     const payload = {
         companyId: Number(companyId),
         userId: 0,
@@ -13,33 +30,47 @@ export async function getShipmentIdFromQr(companyId, dataQr) {
         androidVersion: "null",
         deviceFrom: "getShipmentIdFromQr de Asignacion API",
         appVersion: "null",
-        dataQr: dataQr
+        dataQr,
     };
+
+    const url = "https://apimovil2.lightdata.app/api/qr/get-shipment-id";
 
     let result;
     try {
-
-        result = await axios.post('https://apimovil2.lightdata.app/api/qr/get-shipment-id', payload);
+        result = await axiosInstance.post(url, payload);
     } catch (error) {
-
+        logRed(
+            `[getShipmentIdFromQr] Error durante request: ${(performance.now() - startTime).toFixed(
+                2
+            )} ms (${error.code || error.message})`
+        );
         throw new CustomException({
             title: "Error al obtener el shipmentId",
-            message: "No se pudo obtener el id del envío desde el QR."
+            message: "No se pudo obtener el id del envío desde el QR.",
         });
     }
-    if (result.status == 200) {
-        if (Object.prototype.hasOwnProperty.call(result.data.body, "success") && result.data.body.success == false) {
+
+    const afterResponse = performance.now();
+
+    if (result?.status === 200) {
+        const body = result.data?.body ?? {};
+        if (body.success === false) {
+            logRed(
+                `[getShipmentIdFromQr] Respuesta inválida en ${(afterResponse - startTime).toFixed(2)} ms`
+            );
             throw new CustomException({
-                title: result.data.body.message,
-                message: "No se pudo obtener el id del envío desde el QR."
+                title: body.message || "Respuesta inválida",
+                message: "No se pudo obtener el id del envío desde el QR.",
             });
         }
-        return result.data.body;
-    } else {
-        logRed("Error al obtener el shipmentId");
-        throw new CustomException({
-            title: "Error al obtener el shipmentId",
-            message: "No se pudo obtener el id del envío desde el QR."
-        });
+        return body;
     }
+
+    logRed(
+        `[getShipmentIdFromQr] HTTP status ${result?.status ?? "desconocido"} en ${(performance.now() - startTime).toFixed(2)} ms`
+    );
+    throw new CustomException({
+        title: "Error al obtener el shipmentId",
+        message: "No se pudo obtener el id del envío desde el QR.",
+    });
 }
