@@ -1,4 +1,4 @@
-import { executeQuery, getHeaders, logCyan } from "lightdata-tools";
+import { executeQuery, getHeaders } from "lightdata-tools";
 import { asignar_web } from "./assign_web.js";
 
 export async function verificarAsignacionWeb(
@@ -30,7 +30,6 @@ export async function verificarAsignacionWeb(
             message: "No se encontró el paquete",
         };
     }
-    logCyan("Obtengo el envío");
 
     let estadoAsignacion = envio.estadoAsignacion;
 
@@ -82,7 +81,6 @@ export async function verificarAsignacionWeb(
 
     for (const err of errorCases) {
         if (err.condition) {
-            logCyan(err.log);
             if (err.tipo_mensaje) {
                 const insertSql = `INSERT INTO asignaciones_fallidas (operador, didEnvio, quien, tipo_mensaje, desde) VALUES (?, ?, ?, ?, ?)`;
                 await executeQuery(dbConnection, insertSql, [
@@ -147,7 +145,6 @@ export async function verificarAsignacionWeb(
         "UPDATE envios SET estadoAsignacion = ? WHERE superado = 0 AND elim = 0 AND did = ?",
         [transition.updateState, shipmentId]
     );
-    logCyan(transition.log);
 
     await asignar_web(
         dbConnection,
@@ -157,7 +154,6 @@ export async function verificarAsignacionWeb(
         driverId,
         deviceFrom
     );
-    logCyan("Asignado correctamente");
 
     return { success: true, message: transition.message };
 }

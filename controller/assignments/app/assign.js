@@ -1,103 +1,105 @@
+import { urlApimovil } from "../../../db.js";
 import { crearTablaAsignaciones } from "../../functions/crearTablaAsignaciones.js";
 import { crearUsuario } from "../../functions/crearUsuario.js";
 import { insertAsignacionesDB } from "../../functions/insertAsignacionesDB.js";
-import { checkIfFulfillment, executeQuery, getHeaders, getShipmentIdFromQr, logCyan } from "lightdata-tools";
+import { checkIfFulfillment, getShipmentIdFromQr, LightdataORM } from "lightdata-tools";
 
-export async function asignar(
-    dbConnection,
-    req,
-    company,
-) {
+export async function asignar({ db, req, company }) {
     const { dataQr, driverId } = req.body;
     const { userId } = req.user;
-    const { deviceFrom } = getHeaders(req);
 
-    const shipmentId = await getShipmentIdFromQr(company.did, dataQr);
+    const shipmentId = await getShipmentIdFromQr({
+        headers: req.headers,
+        url: urlApimovil,
+        dataQr,
+        desde: "Asignaciones API",
+    });
 
-    await checkIfFulfillment(dbConnection, shipmentId);
+    await checkIfFulfillment({
+        db,
+        mlShipmentId: shipmentId,
+    });
 
-    if (company.did != 4) {
-        const sqlAsignado = `SELECT id FROM envios_asignaciones WHERE superado=0 AND elim=0 AND didEnvio = ? AND operador = ?`;
-        const asignadoRows = await executeQuery(dbConnection, sqlAsignado, [shipmentId, driverId]);
+    const fetchEnvioPromise = LightdataORM.select({
+        dbConnection: db,
+        table: "envios",
+        where: { did: shipmentId },
+        select: ["estado"],
+        throwIfNotExists: true,
+        throwIfNotExistsMessage: "No se encontró el envío especificado.",
+    });
 
-        if (asignadoRows.length > 0) {
-            return {
-                feature: "asignacion",
-                success: false,
-                message: "El paquete ya se encuentra asignado a este chofer.",
-            };
-        }
-    }
-    logCyan("El paquete todavia no está asignado");
-    const estadoQuery = `SELECT estado FROM envios WHERE superado=0 AND elim=0 AND did = ?`;
-    const estadoRows = await executeQuery(dbConnection, estadoQuery, [shipmentId]);
-    logCyan("Obtengo el estado del paquete");
+    const duplicateCheckPromise =
+        company.did !== 4
+            ? LightdataORM.select({
+                dbConnection: db,
+                table: "envios_asignaciones",
+                where: { didEnvio: shipmentId, operador: driverId },
+                throwIfExists: true,
+                throwIfExistsMessage:
+                    "El chofer ya tiene una asignación activa para este paquete.",
+            })
+            : Promise.resolve();
 
-    if (estadoRows.length === 0) {
-        return {
-            feature: "asignacion",
-            success: false,
-            message: "No se pudo obtener el estado del paquete.",
-        };
-    }
-
-    const estado = estadoRows[0].estado;
-
-    await crearTablaAsignaciones(company.did);
-    logCyan("Creo la tabla de asignaciones");
-
-    await crearUsuario(company.did);
-    logCyan("Creo el usuario");
-
-    const insertSql = `INSERT INTO envios_asignaciones (did, operador, didEnvio, estado, quien, desde) VALUES (?, ?, ?, ?, ?, ?)`;
-    const result = await executeQuery(dbConnection, insertSql, [
-        "",
-        driverId,
-        shipmentId,
-        estado,
-        userId,
-        deviceFrom,
+    const infraPromise = Promise.all([
+        crearTablaAsignaciones(company.did),
+        crearUsuario(company.did),
     ]);
-    logCyan("Inserto en la tabla de asignaciones");
 
-    const did = result.insertId;
+    const [envioRows] = await Promise.all([
+        fetchEnvioPromise,
+        duplicateCheckPromise,
+        infraPromise,
+    ]);
 
-    const queries = [
-        { sql: `UPDATE envios_asignaciones SET did = ? WHERE superado=0 AND elim=0 AND id = ?`, values: [did, did] },
-        { sql: `UPDATE envios_asignaciones SET superado = 1 WHERE superado=0 AND elim=0 AND didEnvio = ? AND did != ?`, values: [shipmentId, did] },
-        { sql: `UPDATE envios SET choferAsignado = ? WHERE superado=0 AND elim=0 AND did = ?`, values: [driverId, shipmentId] },
-        // Esta query solo se incluye si company.did !== 4
-        ...(company.did != 4
-            ? [{ sql: `UPDATE ruteo_paradas SET superado = 1 WHERE superado=0 AND elim=0 AND didPaquete = ?`, values: [shipmentId] }]
-            : []),
-        // { sql: `UPDATE envios_historial SET didCadete = ? WHERE superado=0 AND elim=0 AND didEnvio = ?`, values: [driverId, shipmentId] },
-        { sql: `UPDATE envios SET costoActualizadoChofer = 0 WHERE superado=0 AND elim=0 AND did = ?`, values: [shipmentId] },
-    ];
+    const estadoActual = envioRows.estado;
 
+    const didAsignacion = await LightdataORM.upsert({
+        dbConnection: db,
+        table: "envios_asignaciones",
+        data: {
+            operador: driverId,
+            didEnvio: shipmentId,
+            estado: estadoActual,
+            desde: "Asignaciones API",
+        },
+        quien: userId,
+    });
 
-    for (const { sql, values } of queries) {
-        await executeQuery(dbConnection, sql, values);
-    }
-    logCyan("Updateo las tablas");
+    const updateEnvioPromise = LightdataORM.update({
+        dbConnection: db,
+        table: "envios",
+        data: {
+            choferAsignado: driverId,
+            costoActualizadoChofer: 0,
+        },
+        where: { did: shipmentId },
+        quien: userId,
+    });
+
+    const updateParadaPromise =
+        company.did !== 4
+            ? LightdataORM.update({
+                dbConnection: db,
+                table: "ruteo_paradas",
+                data: { superado: 1 },
+                where: { didPaquete: shipmentId },
+            })
+            : Promise.resolve();
+
+    await Promise.all([updateEnvioPromise, updateParadaPromise]);
 
     await insertAsignacionesDB(
         company.did,
-        did,
+        didAsignacion,
         driverId,
-        estado,
+        estadoActual,
         userId,
-        deviceFrom
+        "Asignaciones API"
     );
-    logCyan("Inserto en la base de datos individual de asignaciones");
 
-    // await updateRedis(company.did, shipmentId, driverId);
-    logCyan("Actualizo Redis con la asignación");
-
-    const resultado = {
-        feature: "asignacion",
+    return {
         success: true,
         message: "Asignación realizada correctamente",
     };
-
-    return resultado;
 }

@@ -1,4 +1,4 @@
-import { executeQuery, getHeaders, logCyan } from "lightdata-tools";
+import { executeQuery, getHeaders } from "lightdata-tools";
 import { insertAsignacionesDB } from "../../functions/insertAsignacionesDB.js";
 
 
@@ -20,7 +20,6 @@ export async function desasignar_web(dbConnection, req, company) {
             message: "El paquete ya está desasignado.",
         };
     }
-    logCyan("El paquete está asignado");
 
     if (!shipmentId) {
 
@@ -46,7 +45,6 @@ export async function desasignar_web(dbConnection, req, company) {
         userId,
         deviceFrom,
     ]);
-    logCyan("Inserto en la tabla de asignaciones con el operador 0");
 
     // Actualizar asignaciones
     await executeQuery(
@@ -69,7 +67,6 @@ export async function desasignar_web(dbConnection, req, company) {
         [shipmentId]
     );
 
-    logCyan("Updateo las tablas");
 
     await insertAsignacionesDB(
         company.did,
@@ -79,10 +76,8 @@ export async function desasignar_web(dbConnection, req, company) {
         userId,
         deviceFrom
     );
-    logCyan("Inserto en la base de datos individual de asignaciones");
 
     // await updateRedis(company.did, shipmentId, 0);
-    logCyan("Updateo redis con la desasignación");
 
     const resultado = {
         feature: "asignacion",

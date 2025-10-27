@@ -28,6 +28,7 @@ export const jwtAudience = process.env.JWT_AUDIENCE;
 export const jwtExpiresIn = process.env.JWT_EXPIRES_IN || '1h';
 
 export const urlEstadosMicroservice = process.env.URL_ESTADOS_MICROSERVICE;
+export const urlApimovil = process.env.URL_APIMOVIL;
 
 export const redisClient = redis.createClient({
     socket: {

@@ -1,4 +1,4 @@
-import { checkIfFulfillment, executeQuery, getHeaders, logCyan, sendShipmentStateToStateMicroserviceAPI } from "lightdata-tools";
+import { checkIfFulfillment, executeQuery, getHeaders, sendShipmentStateToStateMicroserviceAPI } from "lightdata-tools";
 import { crearTablaAsignaciones } from "../../functions/crearTablaAsignaciones.js";
 import { crearUsuario } from "../../functions/crearUsuario.js";
 import { insertAsignacionesDB } from "../../functions/insertAsignacionesDB.js";
@@ -24,12 +24,10 @@ export async function asignar_web(
             message: "El paquete ya se encuentra asignado a este chofer.",
         };
     }
-    logCyan("El paquete todavia no está asignado");
     const estadoQuery = `SELECT estado FROM envios_historial WHERE superado=0 AND elim<>1 AND didEnvio = ?`;
     const estadoRows = await executeQuery(dbConnection, estadoQuery, [
         shipmentId,
     ]);
-    logCyan("Obtengo el estado del paquete");
 
     if (estadoRows.length === 0) {
         return {
@@ -42,10 +40,8 @@ export async function asignar_web(
     const estado = estadoRows[0].estado;
 
     await crearTablaAsignaciones(company.did);
-    logCyan("Creo la tabla de asignaciones");
 
     await crearUsuario(company.did);
-    logCyan("Creo el usuario");
 
     const insertSql = `INSERT INTO envios_asignaciones (did, operador, didEnvio, estado, quien, desde) VALUES (?, ?, ?, ?, ?, ?)`;
     const result = await executeQuery(dbConnection, insertSql, [
@@ -56,7 +52,6 @@ export async function asignar_web(
         userId,
         deviceFrom,
     ]);
-    logCyan("Inserto en la tabla de asignaciones");
 
     const did = result.insertId;
     if (estado == 5 || estado == 9) {
@@ -74,7 +69,6 @@ export async function asignar_web(
     for (const { sql, values } of queries) {
         await executeQuery(dbConnection, sql, values);
     }
-    logCyan("Updateo las tablas");
 
 
     // porque no inserto shipmentId
@@ -86,10 +80,8 @@ export async function asignar_web(
         userId,
         deviceFrom
     );
-    logCyan("Inserto en la base de datos individual de asignaciones");
 
     // await updateRedis(company.did, shipmentId, driverId);
-    logCyan("Actualizo Redis con la asignación");
 
     const resultado = {
         feature: "asignacion",

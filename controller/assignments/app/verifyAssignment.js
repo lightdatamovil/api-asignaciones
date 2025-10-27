@@ -1,20 +1,19 @@
-import { executeQuery, getHeaders, getShipmentIdFromQr, logCyan } from "lightdata-tools";
+import { executeQuery, getFechaConHoraLocalDePais, getShipmentIdFromQr, LightdataORM } from "lightdata-tools";
 import { asignar } from "./assign.js";
+import { urlApimovil } from "../../../db.js";
 
-export async function verifyAssignment(
-    dbConnection,
-    req,
-    company,
-) {
+export async function verifyAssignment({ db, req, company }) {
     const { dataQr, driverId } = req.body;
     const { userId, profile } = req.user;
-    const { deviceFrom } = getHeaders(req);
-    const shipmentId = await getShipmentIdFromQr(company.did, dataQr)
 
-    let hoy = new Date();
-    hoy.setDate(hoy.getDate() - 3);
-    hoy = hoy.toISOString().split("T")[0];
+    const shipmentId = await getShipmentIdFromQr({
+        headers: req.headers,
+        url: urlApimovil,
+        dataQr,
+        desde: "Asignaciones API",
+    });
 
+    let hoy = getFechaConHoraLocalDePais(company.pais);
 
     let sql = `
                 SELECT e.did, e.choferAsignado, e.quien, sua.perfil, e.autofecha, e.estadoAsignacion
@@ -25,7 +24,7 @@ export async function verifyAssignment(
                 ORDER BY e.autofecha ASC
             `;
 
-    const [envio] = await executeQuery(dbConnection, sql, []);
+    const [envio] = await executeQuery(db, sql);
 
     if (!envio) {
         return {
@@ -33,7 +32,6 @@ export async function verifyAssignment(
             message: "No se encontró el paquete",
         };
     }
-    logCyan("Obtengo el envío");
 
     let estadoAsignacion = envio.estadoAsignacion;
 
@@ -79,16 +77,18 @@ export async function verifyAssignment(
 
     for (const err of errorCases) {
         if (err.condition) {
-            logCyan(err.log);
             if (err.tipo_mensaje) {
-                const insertSql = `INSERT INTO asignaciones_fallidas (operador, didEnvio, quien, tipo_mensaje, desde) VALUES (?, ?, ?, ?, ?)`;
-                await executeQuery(dbConnection, insertSql, [
-                    userId,
-                    shipmentId,
-                    driverId,
-                    err.tipo_mensaje,
-                    deviceFrom,
-                ]);
+                await LightdataORM.insert({
+                    dbConnection: db,
+                    table: "asignaciones_fallidas",
+                    data: {
+                        operador: userId,
+                        didEnvio: shipmentId,
+                        quien: driverId,
+                        tipo_mensaje: err.tipo_mensaje,
+                        desde: 'Asignacion API',
+                    }
+                });
             }
             return {
                 success: false,
@@ -139,22 +139,21 @@ export async function verifyAssignment(
         };
     }
 
-    await executeQuery(
-        dbConnection,
-        "UPDATE envios SET estadoAsignacion = ? WHERE superado = 0 AND elim = 0 AND did = ?",
-        [transition.updateState, shipmentId], true
-    );
-    logCyan(transition.log);
+    await LightdataORM.update({
+        dbConnection: db,
+        table: "envios",
+        data: {
+            estadoAsignacion: transition.updateState
+        },
+        where: {
+            did: shipmentId
+        }
+    });
 
-    await asignar(
-        dbConnection,
-        company,
-        userId,
-        dataQr,
-        driverId,
-        deviceFrom
-    );
-    logCyan("Asignado correctamente");
+    await asignar({ db, req, company });
 
-    return { success: true, message: transition.message };
+    return {
+        success: true,
+        message: transition.message,
+    };
 }
