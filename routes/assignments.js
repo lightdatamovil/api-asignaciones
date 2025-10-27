@@ -31,7 +31,7 @@ asignaciones.post(
   '/desasignar',
   buildHandlerWrapper({
     required: ["dataQr"],
-    controller: async ({ db, company }) => await desasignar({ db, company }),
+    controller: async ({ db, company, req }) => await desasignar({ db, req, company }),
   })
 );
 
