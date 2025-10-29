@@ -1,6 +1,6 @@
 import { executeQuery, getFechaConHoraLocalDePais, getShipmentIdFromQr, LightdataORM } from "lightdata-tools";
 import { asignar } from "./assign.js";
-import { urlApimovil } from "../../../db.js";
+import { urlApimovilGetShipmentId } from "../../../db.js";
 
 export async function verifyAssignment({ db, req, company }) {
     const { dataQr, driverId } = req.body;
@@ -8,7 +8,7 @@ export async function verifyAssignment({ db, req, company }) {
 
     const shipmentId = await getShipmentIdFromQr({
         headers: req.headers,
-        url: urlApimovil,
+        url: urlApimovilGetShipmentId,
         dataQr,
         desde: "Asignaciones API",
     });

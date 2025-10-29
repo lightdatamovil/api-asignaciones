@@ -1,4 +1,4 @@
-import { urlApimovil } from "../../../db.js";
+import { urlApimovilGetShipmentId, axiosInstance } from "../../../db.js";
 import { crearTablaAsignaciones } from "../../functions/crearTablaAsignaciones.js";
 import { crearUsuario } from "../../functions/crearUsuario.js";
 import { insertAsignacionesDB } from "../../functions/insertAsignacionesDB.js";
@@ -9,10 +9,12 @@ export async function asignar({ db, req, company }) {
     const { userId } = req.user;
 
     const shipmentId = await getShipmentIdFromQr({
-        headers: req.headers,
-        url: urlApimovil,
+        url: urlApimovilGetShipmentId,
+        axiosInstance,
+        req,
         dataQr,
         desde: "Asignaciones API",
+        companyId: req.body.companyId,
     });
 
     await checkIfFulfillment({
@@ -26,7 +28,7 @@ export async function asignar({ db, req, company }) {
         where: { did: shipmentId },
         select: ["estado"],
         throwIfNotExists: true,
-        throwIfNotExistsMessage: "No se encontró el envío especificado.",
+        throwIfNotExistsMessage: "No se encontró el envío especificado."
     });
 
     const duplicateCheckPromise =
@@ -37,7 +39,7 @@ export async function asignar({ db, req, company }) {
                 where: { didEnvio: shipmentId, operador: driverId },
                 throwIfExists: true,
                 throwIfExistsMessage:
-                    "El chofer ya tiene una asignación activa para este paquete.",
+                    "El chofer ya tiene una asignación activa para este paquete."
             })
             : Promise.resolve();
 
@@ -52,18 +54,21 @@ export async function asignar({ db, req, company }) {
         infraPromise,
     ]);
 
-    const estadoActual = envioRows.estado;
+    const estadoActual = envioRows[0].estado;
 
-    const didAsignacion = await LightdataORM.upsert({
+    const [didAsignacion] = await LightdataORM.upsert({
         dbConnection: db,
         table: "envios_asignaciones",
+        where: { didEnvio: shipmentId },
         data: {
             operador: driverId,
             didEnvio: shipmentId,
             estado: estadoActual,
             desde: "Asignaciones API",
+            orden: 0,
+            procesada: 0,
         },
-        quien: userId,
+        quien: userId
     });
 
     const updateEnvioPromise = LightdataORM.update({
@@ -74,7 +79,7 @@ export async function asignar({ db, req, company }) {
             costoActualizadoChofer: 0,
         },
         where: { did: shipmentId },
-        quien: userId,
+        quien: userId
     });
 
     const updateParadaPromise =
@@ -84,6 +89,8 @@ export async function asignar({ db, req, company }) {
                 table: "ruteo_paradas",
                 data: { superado: 1 },
                 where: { didPaquete: shipmentId },
+                quien: userId,
+                throwIfNotExists: false
             })
             : Promise.resolve();
 

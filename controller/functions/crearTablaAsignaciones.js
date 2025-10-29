@@ -21,6 +21,6 @@ export async function crearTablaAsignaciones(companyId) {
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
         `;
 
-    await executeQueryFromPool(poolLocal, createTableSql);
+    await executeQueryFromPool({ pool: poolLocal, query: createTableSql });
 
 }

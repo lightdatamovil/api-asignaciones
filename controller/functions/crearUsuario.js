@@ -12,6 +12,6 @@ export async function crearUsuario(companyId) {
     const createUserSql = `CREATE USER IF NOT EXISTS ${userExpr} IDENTIFIED BY ${mysql.escape(password)}`;
     const grantSql = `GRANT ALL PRIVILEGES ON \`asigna_data\`.* TO ${userExpr}`;
 
-    await executeQueryFromPool(poolLocal, createUserSql);   // <-- SIN values
-    await executeQueryFromPool(poolLocal, grantSql);        // <-- SIN values
+    await executeQueryFromPool({ pool: poolLocal, query: createUserSql });
+    await executeQueryFromPool({ pool: poolLocal, query: grantSql });
 }

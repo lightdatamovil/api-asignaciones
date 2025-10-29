@@ -6,6 +6,7 @@ import { buildHandlerWrapper } from "../src/functions/build_handler_wrapper.js";
 import { verificarAsignacionWeb } from "../controller/assignments/web/verificarAsignacionWeb.js";
 import { asignar_web } from "../controller/assignments/web/assign_web.js";
 import { desasignar_web } from "../controller/assignments/web/unassignWeb.js";
+import { companiesService } from "../db.js";
 
 const asignaciones = Router();
 
@@ -13,6 +14,15 @@ asignaciones.post(
   '/asignar',
   buildHandlerWrapper({
     required: ["dataQr", "driverId"],
+    optional: ['companyId'],
+    companyResolver2: async ({ req }) => {
+      let companyId = req.body.companyId;
+      if (!companyId) {
+        companyId = req.user.companyId;
+      }
+      const company = await companiesService.getById(companyId);
+      return company;
+    },
     controller: async ({ db, req, company }) => {
       let result;
 

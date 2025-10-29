@@ -2,6 +2,8 @@ import redis from 'redis';
 import dotenv from 'dotenv';
 import mysql2 from 'mysql2/promise';
 import { CompaniesService } from 'lightdata-tools';
+import https from 'https';
+import axios from 'axios';
 
 dotenv.config({ path: process.env.ENV_FILE || ".env" });
 
@@ -28,7 +30,7 @@ export const jwtAudience = process.env.JWT_AUDIENCE;
 export const jwtExpiresIn = process.env.JWT_EXPIRES_IN || '1h';
 
 export const urlEstadosMicroservice = process.env.URL_ESTADOS_MICROSERVICE;
-export const urlApimovil = process.env.URL_APIMOVIL;
+export const urlApimovilGetShipmentId = process.env.URL_APIMOVIL_GET_SHIPMENT_ID;
 
 export const redisClient = redis.createClient({
     socket: {
@@ -81,3 +83,15 @@ export async function updateRedis(empresaId, envioId, choferId) {
 
     await redisClient.set('DWRTE', JSON.stringify(DWRTE));
 }
+
+export const httpsAgent = new https.Agent({
+    keepAlive: true,
+    maxSockets: 100,
+    timeout: 10000,
+    family: 4,
+});
+
+export const axiosInstance = axios.create({
+    httpsAgent,
+    timeout: 335000,
+});

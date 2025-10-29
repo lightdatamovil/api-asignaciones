@@ -1,4 +1,4 @@
-import { urlApimovil } from "../../../db.js";
+import { urlApimovilGetShipmentId } from "../../../db.js";
 import { insertAsignacionesDB } from "../../functions/insertAsignacionesDB.js";
 import { getShipmentIdFromQr, LightdataORM } from "lightdata-tools";
 
@@ -8,7 +8,7 @@ export async function desasignar({ db, req, company }) {
 
     const shipmentId = await getShipmentIdFromQr({
         headers: req.headers,
-        url: urlApimovil,
+        url: urlApimovilGetShipmentId,
         dataQr,
         desde: "Asignaciones API",
     });
