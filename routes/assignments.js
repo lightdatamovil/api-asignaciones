@@ -71,6 +71,7 @@ asignaciones.post("/asignar", async (req, res) => {
     crearLog(companyId, userId, profile, req.body, performance.now() - startTime, JSON.stringify(result), "/asignar", "api", true);
     res.status(200).json(result);
   } catch (error) {
+    console.log(error);
     if (error instanceof CustomException) {
       logRed(`Error 400 en asignaciones: ${error} `);
       crearLog(companyId, userId, profile, req.body, performance.now() - startTime, JSON.stringify(error), "/asignar", "api", false);
