@@ -41,6 +41,12 @@ asignaciones.post(
   '/desasignar',
   buildHandlerWrapper({
     required: ["dataQr"],
+    optional: ['companyId'],
+    companyResolver2: async ({ req }) => {
+      const companyId = req.body?.companyId ?? req.user?.companyId;
+      const company = await companiesService.getById(companyId);
+      return company;
+    },
     controller: async ({ db, company, req }) => await desasignar({ db, req, company }),
   })
 );

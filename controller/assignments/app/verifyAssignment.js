@@ -1,16 +1,16 @@
 import { executeQuery, getFechaConHoraLocalDePais, getShipmentIdFromQr, LightdataORM } from "lightdata-tools";
 import { asignar } from "./assign.js";
-import { urlApimovilGetShipmentId } from "../../../db.js";
+import { urlApimovilGetShipmentId, axiosInstance } from "../../../db.js";
 
 export async function verifyAssignment({ db, req, company }) {
     const { dataQr, driverId } = req.body;
     const { userId, profile } = req.user;
 
     const shipmentId = await getShipmentIdFromQr({
-        headers: req.headers,
         url: urlApimovilGetShipmentId,
+        axiosInstance,
+        req,
         dataQr,
-        desde: "Asignaciones API",
     });
 
     let hoy = getFechaConHoraLocalDePais(company.pais);

@@ -1,4 +1,4 @@
-import { urlApimovilGetShipmentId } from "../../../db.js";
+import { urlApimovilGetShipmentId, axiosInstance } from "../../../db.js";
 import { insertAsignacionesDB } from "../../functions/insertAsignacionesDB.js";
 import { getShipmentIdFromQr, LightdataORM } from "lightdata-tools";
 
@@ -7,19 +7,11 @@ export async function desasignar({ db, req, company }) {
     const { userId } = req.user;
 
     const shipmentId = await getShipmentIdFromQr({
-        headers: req.headers,
         url: urlApimovilGetShipmentId,
-        dataQr,
-        desde: "Asignaciones API",
+        axiosInstance,
+        req,
+        dataQr
     });
-
-    if (!shipmentId) {
-        return {
-            feature: "asignacion",
-            success: false,
-            message: "Error al obtener el id del envío",
-        };
-    }
 
     const [asignacionRow] = await LightdataORM.select({
         dbConnection: db,
@@ -31,10 +23,10 @@ export async function desasignar({ db, req, company }) {
             "No se encontró una asignación activa para este envío.",
     });
 
-    const operadorActual = asignacionRow.operador ?? 0;
-    const estadoActual = asignacionRow.estado ?? 0;
+    const operadorActual = asignacionRow.operador;
+    const estadoActual = asignacionRow.estado;
 
-    if (Number(operadorActual) === 0) {
+    if (operadorActual == 0) {
         return {
             feature: "asignacion",
             success: false,
@@ -84,10 +76,7 @@ export async function desasignar({ db, req, company }) {
     );
 
     return {
-        feature: "asignacion",
         success: true,
         message: "Desasignación realizada correctamente",
-        shipmentId,
-        choferAnterior: operadorActual,
     };
 }
