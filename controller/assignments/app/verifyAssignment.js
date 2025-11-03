@@ -1,8 +1,11 @@
-import { executeQuery, getFechaConHoraLocalDePais, getShipmentIdFromQr, LightdataORM } from "lightdata-tools";
-import { asignar } from "./assign.js";
-import { urlApimovilGetShipmentId, axiosInstance } from "../../../db.js";
+import { getShipmentIdFromQr, LightdataORM } from 'lightdata-tools';
+import { urlApimovilGetShipmentId, axiosInstance } from '../../../db.js';
 
-export async function verifyAssignment({ db, req, company }) {
+/**
+ * Verifica reglas de asignación y, si corresponde, actualiza estadoAsignacion.
+ * NO llama a `asignar`. Devuelve { proceed: boolean, success: boolean, message?: string, tipo_mensaje?: number }.
+ */
+export async function verifyAssignment({ db, req }) {
     const { dataQr, driverId } = req.body;
     const { userId, profile } = req.user;
 
@@ -13,64 +16,62 @@ export async function verifyAssignment({ db, req, company }) {
         dataQr,
     });
 
-    let hoy = getFechaConHoraLocalDePais(company.pais);
-
-    let sql = `
-                SELECT e.did, e.choferAsignado, e.quien, sua.perfil, e.autofecha, e.estadoAsignacion
-                FROM envios AS e
-                LEFT JOIN sistema_usuarios_accesos AS sua 
-                    ON sua.usuario = e.quien AND sua.superado = 0 AND sua.elim = 0
-                WHERE e.did = ${shipmentId} AND e.superado = 0 AND e.elim = 0 AND e.autofecha > ${hoy}
-                ORDER BY e.autofecha ASC
-            `;
-
-    const [envio] = await executeQuery(db, sql);
+    const [envio] = await LightdataORM.select({
+        dbConnection: db,
+        table: 'envios',
+        where: { did: shipmentId },
+    });
 
     if (!envio) {
         return {
-            success: false,
-            message: "No se encontró el paquete",
+            proceed: false,
+            message: 'No se encontró el paquete',
         };
     }
 
-    let estadoAsignacion = envio.estadoAsignacion;
+    const driverIdNum = Number(driverId);
+    const didCadete = Number(envio.choferAsignado ?? 0);
+    const estadoAsignacion = Number(envio.estadoAsignacion ?? 0);
+    const esElMismoCadete = didCadete === driverIdNum;
 
-    let didCadete = envio.choferAsignado;
-
-    let esElMismoCadete = didCadete === driverId;
+    if (!didCadete) {
+        return {
+            proceed: true,
+        };
+    }
 
     const errorCases = [
         {
             condition: esElMismoCadete && profile === 1 && estadoAsignacion === 1,
-            log: "Es el mismo cadete, es perfil 1 y estadoAsignacion 1",
-            message: "Este paquete ya fue asignado a este cadete",
+            log: 'Es el mismo cadete, es perfil 1 y estadoAsignacion 1',
+            message: 'Este paquete ya fue asignado a este cadete',
         },
         {
             condition: esElMismoCadete && profile === 3 && estadoAsignacion === 2,
-            log: "Es el mismo cadete, es perfil 3 y estadoAsignacion 2",
-            message: "Este paquete ya fue autoasignado a este cadete",
+            log: 'Es el mismo cadete, es perfil 3 y estadoAsignacion 2',
+            message: 'Este paquete ya fue autoasignado a este cadete',
         },
         {
             condition: esElMismoCadete && profile === 5 && [3, 4, 5].includes(estadoAsignacion),
-            log: "Es el mismo cadete, es perfil 5 y estadoAsignacion 3, 4 o 5",
-            message: "Este paquete ya fue confirmado a este cadete",
+            log: 'Es el mismo cadete, es perfil 5 y estadoAsignacion 3, 4 o 5',
+            message: 'Este paquete ya fue confirmado a este cadete',
         },
         {
             condition: !esElMismoCadete && profile === 1 && estadoAsignacion === 1,
-            log: "Es perfil 1 y estadoAsignacion 1",
-            message: "Este paquete ya fue asignado a otro cadete",
+            log: 'Es perfil 1 y estadoAsignacion 1',
+            message: 'Este paquete ya fue asignado a otro cadete',
             tipo_mensaje: 1,
         },
         {
             condition: !esElMismoCadete && profile === 3 && [1, 2, 3, 4, 5].includes(estadoAsignacion),
-            log: "Es perfil 3 y estadoAsignacion " + estadoAsignacion,
-            message: "No tenes el paquete asignado",
+            log: 'Es perfil 3 y estadoAsignacion ' + estadoAsignacion,
+            message: 'No tenes el paquete asignado',
             tipo_mensaje: 2,
         },
         {
             condition: !esElMismoCadete && profile === 5 && [1, 3, 4, 5].includes(estadoAsignacion),
-            log: "Es perfil 5 y estadoAsignacion 1, 3, 4 o 5",
-            message: "Este paquete ya fue confirmado a otro cadete",
+            log: 'Es perfil 5 y estadoAsignacion 1, 3, 4 o 5',
+            message: 'Este paquete ya fue confirmado a otro cadete',
             tipo_mensaje: 3,
         },
     ];
@@ -80,18 +81,19 @@ export async function verifyAssignment({ db, req, company }) {
             if (err.tipo_mensaje) {
                 await LightdataORM.insert({
                     dbConnection: db,
-                    table: "asignaciones_fallidas",
+                    table: 'asignaciones_fallidas',
                     data: {
                         operador: userId,
                         didEnvio: shipmentId,
-                        quien: driverId,
+                        quien: driverIdNum,
                         tipo_mensaje: err.tipo_mensaje,
                         desde: 'Asignacion API',
-                    }
+                    },
+                    quien: userId,
                 });
             }
             return {
-                success: false,
+                proceed: false,
                 message: err.message,
             };
         }
@@ -101,59 +103,53 @@ export async function verifyAssignment({ db, req, company }) {
         {
             condition: profile === 1 && estadoAsignacion === 0,
             updateState: 1,
-            message: "Asignado correctamente.",
-            log: "Puse en estado 1"
+            message: 'Asignado correctamente.',
+            log: 'Puse en estado 1',
         },
         {
             condition: profile === 3 && estadoAsignacion === 1 && esElMismoCadete,
             updateState: 2,
-            message: "Autoasignado correctamente.",
-            log: "Puse en estado 2"
+            message: 'Autoasignado correctamente.',
+            log: 'Puse en estado 2',
         },
         {
             condition: profile === 5 && estadoAsignacion === 2 && esElMismoCadete,
             updateState: 3,
-            message: "Confirmado correctamente.",
-            log: "Puse en estado 3"
+            message: 'Confirmado correctamente.',
+            log: 'Puse en estado 3',
         },
         {
             condition: profile === 5 && estadoAsignacion === 1 && esElMismoCadete,
             updateState: 4,
-            message: "Confirmado correctamente.",
-            log: "Puse en estado 4"
+            message: 'Confirmado correctamente.',
+            log: 'Puse en estado 4',
         },
         {
             condition: profile === 5 && estadoAsignacion === 0,
             updateState: 5,
-            message: "Asignado correctamente.",
-            log: "Puse en estado 5"
-        }
+            message: 'Asignado correctamente.',
+            log: 'Puse en estado 5',
+        },
     ];
 
-    let transition = transitions.find(t => t.condition);
+    const transition = transitions.find((t) => t.condition);
 
     if (!transition) {
         return {
-            success: false,
-            message: "No se puede asignar el paquete.",
+            proceed: false,
+            message: 'No se puede asignar el paquete.',
         };
     }
 
     await LightdataORM.update({
         dbConnection: db,
-        table: "envios",
-        data: {
-            estadoAsignacion: transition.updateState
-        },
-        where: {
-            did: shipmentId
-        }
+        table: 'envios',
+        data: { estadoAsignacion: transition.updateState },
+        where: { did: shipmentId },
+        quien: userId,
     });
 
-    await asignar({ db, req, company });
-
     return {
-        success: true,
-        message: transition.message,
+        proceed: true,
     };
 }

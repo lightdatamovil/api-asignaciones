@@ -13,24 +13,28 @@ const asignaciones = Router();
 asignaciones.post(
   '/asignar',
   buildHandlerWrapper({
-    required: ["dataQr", "driverId"],
+    required: ['dataQr', 'driverId'],
     optional: ['companyId'],
     companyResolver2: async ({ req }) => {
-      let companyId = req.body.companyId;
-      if (!companyId) {
-        companyId = req.user.companyId;
-      }
+      let companyId = req.body.companyId || req.user.companyId;
       const company = await companiesService.getById(companyId);
       return company;
     },
     controller: async ({ db, req, company }) => {
-      let result;
+      let precheck = null;
 
       if (company.did == 4) {
-        result = await verifyAssignment({ db, req, company });
-      } else {
-        result = await asignar({ db, req, company });
+        precheck = await verifyAssignment({ db, req, company });
+
+        if (!precheck?.proceed) {
+          return {
+            success: false,
+            message: precheck?.message || 'No se pudo verificar la asignación.',
+          };
+        }
       }
+
+      const result = await asignar({ db, req, company });
 
       return result;
     },
