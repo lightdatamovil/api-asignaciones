@@ -28,7 +28,7 @@ export async function asignar({ db, req, company }) {
         where: { did: shipmentId },
         select: ["estado"],
         throwIfNotExists: true,
-        throwIfNotExistsMessage: "No se encontró el envío especificado."
+        throwIfNotExistsMessage: "No se encontró el envío especificado.",
     });
 
     const duplicateCheckPromise =
@@ -39,7 +39,7 @@ export async function asignar({ db, req, company }) {
                 where: { didEnvio: shipmentId, operador: driverId },
                 throwIfExists: true,
                 throwIfExistsMessage:
-                    "El chofer ya tiene una asignación activa para este paquete."
+                    "El chofer ya tiene una asignación activa para este paquete.",
             })
             : Promise.resolve();
 
@@ -54,7 +54,9 @@ export async function asignar({ db, req, company }) {
         infraPromise,
     ]);
 
-    const estadoActual = envioRows[0].estado;
+    const estadoActual = Array.isArray(envioRows)
+        ? envioRows[0]?.estado
+        : envioRows?.estado;
 
     const [didAsignacion] = await LightdataORM.upsert({
         dbConnection: db,
@@ -68,7 +70,7 @@ export async function asignar({ db, req, company }) {
             orden: 0,
             procesada: 0,
         },
-        quien: userId
+        quien: userId,
     });
 
     const updateEnvioPromise = LightdataORM.update({
@@ -79,7 +81,7 @@ export async function asignar({ db, req, company }) {
             costoActualizadoChofer: 0,
         },
         where: { did: shipmentId },
-        quien: userId
+        quien: userId,
     });
 
     const updateParadaPromise =
@@ -90,7 +92,7 @@ export async function asignar({ db, req, company }) {
                 data: { superado: 1 },
                 where: { didPaquete: shipmentId },
                 quien: userId,
-                throwIfNotExists: false
+                throwIfNotExists: false,
             })
             : Promise.resolve();
 
@@ -102,11 +104,13 @@ export async function asignar({ db, req, company }) {
         driverId,
         estadoActual,
         userId,
-        "Asignaciones API"
+        "Asignaciones API",
     );
 
-    return {
+    const done = {
         success: true,
         message: "Asignación realizada correctamente",
     };
+
+    return done;
 }
