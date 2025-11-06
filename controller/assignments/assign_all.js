@@ -9,7 +9,7 @@ export async function asignar_masivo(
     shipmentIds,
     driverId,
 ) {
-    const deviceFrom = "subida-excel";
+    const deviceFrom = "excel";
     const enviosAsign = parseShipmentIds(shipmentIds);
 
     //verificar algun ff
