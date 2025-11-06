@@ -33,22 +33,28 @@ export async function asignar_masivo(
     // insertar en envios_asignaciones los envios asinados a ese chofer
 
     //mapear todo lo demas a data
-    const data = enviosAsign.map(() => ({
+    const data = enviosAsign.map((e) => ({
+        didEnvio: e,
         operador: driverId,
         quien: userId,
         desde: deviceFrom
     }));
 
-    await LightdataORMHOTFIX.update({
+    console.log("Envios a asignar:", enviosAsign);
+
+    console.log("Data para asignacion masiva:", data);
+
+    const insert = await LightdataORMHOTFIX.insert({
         db: dbConnection,
         table: "envios_asignaciones",
-        where: { didEnvio: enviosAsign },
         versionKey: "didEnvio",
         throwIfNotExists: false,
         quien: userId,
         data: data,
         log: true
     });
+
+    await executeQuery(dbConnection, `UPDATE envios_asignaciones SET superado = 1 WHERE didEnvio IN (${shipmentIds}) AND did NOT IN (${insert})`, [], true);
 
     await LightdataORMHOTFIX.update({
         db: dbConnection,
