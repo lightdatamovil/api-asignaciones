@@ -1,0 +1,81 @@
+import { LightdataORMHOTFIX } from "../../classes/LightdataORMHOTFIX.js";
+import { executeQuery } from "../../db.js";
+import { parseShipmentIds } from "../../src/functions/stringAArray.js";
+import CustomException from "../../classes/custom_exception.js";
+
+export async function asignar_masivo(
+    dbConnection,
+    userId,
+    shipmentIds,
+    driverId,
+) {
+    const deviceFrom = "subida-excel";
+    const enviosAsign = parseShipmentIds(shipmentIds);
+
+    //verificar algun ff
+    const sqlff = ` SELECT did FROM envios WHERE superado = 0 AND elim = 52 AND did IN (${shipmentIds})  `;
+    const rowsff = await executeQuery(dbConnection, sqlff, [], true);
+
+    if (rowsff.length > 0) {
+        throw new CustomException({
+            title: "Error de asignación",
+            message: `Algunos de los envíos seleccionados corresponden a Fulfillment. No se pueden asignar.`
+        });
+    }
+
+    //todo necesito obetener el estado de cada paquete? para que?
+
+
+    //   await crearTablaAsignaciones(company.did);
+
+    //   await crearUsuario(company.did);
+
+    // insertar en envios_asignaciones los envios asinados a ese chofer
+
+    //mapear todo lo demas a data
+    const data = enviosAsign.map(() => ({
+        operador: driverId,
+        quien: userId,
+        desde: deviceFrom
+    }));
+
+    await LightdataORMHOTFIX.update({
+        db: dbConnection,
+        table: "envios_asignaciones",
+        where: { didEnvio: enviosAsign },
+        versionKey: "didEnvio",
+        throwIfNotExists: false,
+        quien: userId,
+        data: data,
+        log: true
+    });
+
+    await LightdataORMHOTFIX.update({
+        db: dbConnection,
+        table: "envios",
+        where: { did: enviosAsign },
+        quien: userId,
+        data: { choferAsignado: driverId, costoActualizadoChofer: 0 },
+        log: true
+    });
+
+    await LightdataORMHOTFIX.update({
+        db: dbConnection,
+        table: "ruteo_paradas",
+        where: { didPaquete: enviosAsign },
+        versionKey: "didPaquete",
+        throwIfNotExists: false,
+        quien: userId,
+        data: { superado: 1 },
+        log: true
+    });
+
+    const resultado = {
+        feature: "asignacion-masiva",
+        cantidadAsignada: enviosAsign.length,
+        success: true,
+        message: "Asignación realizada correctamente",
+    };
+
+    return resultado;
+}

@@ -12,6 +12,9 @@ import { asignar_web } from "../controller/assignments/assign_web.js";
 import { verificarAsignacionWeb } from "../controller/assignments/verificarAsignacionWeb.js";
 import { desasignar_web } from "../controller/assignments/unassignWeb.js";
 import { decrActiveLocal, incrActiveLocal } from "../src/functions/dbList.js";
+import { errorHandler } from "lightdata-tools";
+import { asignar_masivo } from "../controller/assignments/assign_all.js";
+import { profile } from "console";
 
 const asignaciones = Router();
 
@@ -258,5 +261,34 @@ asignaciones.post("/desasignar-web", async (req, res) => {
 });
 
 
+asignaciones.post("/asignar-masivo", async (req, res) => {
+  const startTime = performance.now();
+
+  const { companyId, userId, shipmentIds, driverId, perfil } = req.body;
+
+  const company = await getCompanyById(companyId);
+
+  // conexion a la db
+  const dbConfig = getProdDbConfig(company);
+  const dbConnection = mysql2.createConnection(dbConfig);
+  dbConnection.connect();
+
+  try {
+    const result = await asignar_masivo(
+      dbConnection,
+      userId,
+      shipmentIds,
+      driverId
+    );
+
+    crearLog(companyId, userId, perfil, req.body, performance.now() - startTime, JSON.stringify(result), "/asignar-masivo", "api", true);
+    res.status(200).json(result);
+  } catch (error) {
+    errorHandler(req, res, error);
+  } finally {
+    dbConnection.end();
+    logPurple(`Tiempo de ejecución: ${performance.now() - startTime} ms`);
+  }
+});
 
 export default asignaciones;
