@@ -345,7 +345,7 @@ export class LightdataORMHOTFIX {
     AND elim = 0
     AND superado = 0;
   `;
-        const updRes = await executeQuery(db, qSuperar, idsVK, log);
+        const updRes = await executeQuery(db, qSuperar, idsVK, true);
 
         if ((!updRes || updRes.affectedRows === 0) && throwIfNotExists) {
             throw new CustomException({
@@ -586,14 +586,20 @@ export class LightdataORMHOTFIX {
         returnRow = false,                // ⬅️ NUEVO
         returnSelect = "*",               // ⬅️ columnas si returnRow=true
     }) {
+        console.log("UPSERT where:", where);
         const existing = await this.select({
             db,
             table,
             where,
             select: [versionKey],
             includeHistorical,
+            throwIfNotExists: false,
             log,
         });
+
+
+
+        console.log("UPSERT existing:", existing);
 
         if (existing.length > 0) {
             const vk = existing[0][versionKey];

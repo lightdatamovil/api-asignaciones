@@ -54,31 +54,46 @@ export async function asignar_masivo(
         log: true
     });
 
+    console.log(data.length, "envios asignados");
+
+    if (insert.length < data.length) {
+        throw new CustomException({
+            title: "Error de asignación",
+            message: `Algunos de los envíos seleccionados no se asignaron.`
+        });
+    }
+
     await executeQuery(dbConnection, `UPDATE envios_asignaciones SET superado = 1 WHERE didEnvio IN (${shipmentIds}) AND did NOT IN (${insert})`, [], true);
 
     await LightdataORMHOTFIX.update({
         db: dbConnection,
         table: "envios",
         where: { did: enviosAsign },
+        throwIfNotExists: false,
         quien: userId,
         data: { choferAsignado: driverId, costoActualizadoChofer: 0 },
         log: true
     });
 
-    await LightdataORMHOTFIX.update({
-        db: dbConnection,
-        table: "ruteo_paradas",
-        where: { didPaquete: enviosAsign },
-        versionKey: "didPaquete",
-        throwIfNotExists: false,
-        quien: userId,
-        data: { superado: 1 },
-        log: true
-    });
+    /*
+        await LightdataORMHOTFIX.upsert({
+            db: dbConnection,
+            table: "ruteo_paradas",
+            where: { didPaquete: enviosAsign },
+            versionKey: "didPaquete",
+            throwIfNotExists: false,
+            quien: userId,
+            data: { superado: 1 },
+            log: true
+        });
+        */
+
+    // { sql: `UPDATE ruteo_paradas SET superado = 1 WHERE superado=0 AND elim<>1 AND didPaquete = ?`, values: [shipmentId], },
+    await executeQuery(dbConnection, `UPDATE ruteo_paradas SET superado = 1 WHERE didPaquete IN (${shipmentIds})`, [], true);
 
     const resultado = {
         feature: "asignacion-masiva",
-        cantidadAsignada: enviosAsign.length,
+        cantidadAsignada: insert.length,
         success: true,
         message: "Asignación realizada correctamente",
     };
