@@ -13,7 +13,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "https": "^1.0.0",
-    "lightdata-tools": "^1.4.77",
+    "lightdata-tools": "^1.4.81",
     "mysql2": "^3.14.1",
     "redis": "^4.6.13"
   },
