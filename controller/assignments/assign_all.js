@@ -16,6 +16,7 @@ export async function asignar_masivo(
     const sqlff = ` SELECT did FROM envios WHERE superado = 0 AND elim = 52 AND did IN (${shipmentIds})  `;
     const rowsff = await executeQuery(dbConnection, sqlff, [], true);
 
+    /*
     if (rowsff.length > 0) {
         throw new CustomException({
             title: "Error de asignación",
@@ -23,8 +24,15 @@ export async function asignar_masivo(
         });
     }
 
-    //todo necesito obetener el estado de cada paquete? para que?
+*/
 
+    //si algun envio es ff lo saco de mi mi lista enviosAsign
+    const ffIds = rowsff.map(r => r.did);
+    const enviosAsignFiltered = enviosAsign.filter(e => !ffIds.includes(e));
+    console.log("Envios FF filtrados:", ffIds);
+    console.log("Envios a asignar despues de filtrar FF:", enviosAsignFiltered);
+
+    //todo necesito obetener el estado de cada paquete? para que?
 
     //   await crearTablaAsignaciones(company.did);
 
@@ -33,14 +41,14 @@ export async function asignar_masivo(
     // insertar en envios_asignaciones los envios asinados a ese chofer
 
     //mapear todo lo demas a data
-    const data = enviosAsign.map((e) => ({
+    const data = enviosAsignFiltered.map((e) => ({
         didEnvio: e,
         operador: driverId,
         quien: userId,
         desde: deviceFrom
     }));
 
-    console.log("Envios a asignar:", enviosAsign);
+    console.log("Envios a asignar:", enviosAsignFiltered);
 
     console.log("Data para asignacion masiva:", data);
 
@@ -55,13 +63,6 @@ export async function asignar_masivo(
     });
 
     console.log(data.length, "envios asignados");
-
-    if (insert.length < data.length) {
-        throw new CustomException({
-            title: "Error de asignación",
-            message: `Algunos de los envíos seleccionados no se asignaron.`
-        });
-    }
 
     await executeQuery(dbConnection, `UPDATE envios_asignaciones SET superado = 1 WHERE didEnvio IN (${shipmentIds}) AND did NOT IN (${insert})`, [], true);
 
@@ -91,9 +92,18 @@ export async function asignar_masivo(
     // { sql: `UPDATE ruteo_paradas SET superado = 1 WHERE superado=0 AND elim<>1 AND didPaquete = ?`, values: [shipmentId], },
     await executeQuery(dbConnection, `UPDATE ruteo_paradas SET superado = 1 WHERE didPaquete IN (${shipmentIds})`, [], true);
 
+    /*
+        if (insert.length < data.length) {
+            throw new CustomException({
+                title: "Error de asignación",
+                message: `Algunos de los envíos seleccionados no se asignaron.`
+            });
+        }
+    */
     const resultado = {
         feature: "asignacion-masiva",
         cantidadAsignada: insert.length,
+        enviosFF: ffIds,
         success: true,
         message: "Asignación realizada correctamente",
     };
