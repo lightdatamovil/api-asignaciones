@@ -21,14 +21,14 @@ export async function desasignar(dbConnection, company, userId, body, deviceFrom
             message: "Error al obtener el id del envio",
         };
     }
-    console.log("Shipment ID:", shipmentId);
+
 
     const sqlOperador =
         "SELECT operador, estado FROM envios_asignaciones WHERE didEnvio = ? AND superado = 0 AND elim = 0";
     const result = await executeQuery(dbConnection, sqlOperador, [shipmentId], true);
 
     const operador = result.length > 0 ? result[0].operador : 0;
-    console.log("Operador actual:", operador);
+
 
     if (operador == 0) {
         return {
@@ -40,11 +40,11 @@ export async function desasignar(dbConnection, company, userId, body, deviceFrom
     logCyan("El paquete está asignado");
 
     const operadorEsLogistica = await choferEsLogistica(dbConnection, operador);
-    console.log(operadorEsLogistica);
+
 
     if (operadorEsLogistica) {
 
-        console.log(operadorEsLogistica);
+
 
         //traer de redis el did de la compania externa por el codvinculacion
         const companiaExterna = await getCompanyByCode(operadorEsLogistica.codvinculacion);
@@ -59,7 +59,7 @@ export async function desasignar(dbConnection, company, userId, body, deviceFrom
             userId: quien,
             desde: deviceFrom,
         };
-        console.log(payload);
+
         try {
             await fetch(URL_ELIMINAR_ENVIO, {
                 method: "POST",
