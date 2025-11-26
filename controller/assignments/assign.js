@@ -76,10 +76,10 @@ export async function asignar(
         { sql: `UPDATE envios SET costoActualizadoChofer = 0 WHERE superado=0 AND elim=0 AND did = ?`, values: [shipmentId] },
     ];
 
+    await Promise.all(
+        queries.map(({ sql, values }) => executeQuery(dbConnection, sql, values))
+    );
 
-    await Promise.all(queries.map(({ sql, values }, index) => {
-        executeQuery(dbConnection, sql, values);
-    }));
     logCyan("Updateo las tablas");
 
     await insertAsignacionesDB(

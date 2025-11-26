@@ -1,3 +1,4 @@
+import { CustomException } from "lightdata-tools";
 import { executeQuery, getCompanyByCode, getProdDbConfig } from "../../db.js";
 import { choferEsLogistica } from "../../src/functions/choferEsLogistica.js";
 import { debugHttpError } from "../../src/functions/debugEndpoint.js";
@@ -45,20 +46,30 @@ export async function desasignar_web(dbConnection, company, userId, shipmentId, 
 
         //traer de redis el did de la compania externa por el codvinculacion
         const companiaExterna = await getCompanyByCode(operadorEsLogistica.codvinculacion);
+        let dbConnectionExterna, shipmentIdExterno;
         // conectarme a nueva empresa
+        try {
+            const dbConfigExterna = getProdDbConfig(companiaExterna);
+            dbConnectionExterna = mysql2.createConnection(dbConfigExterna);
+            dbConnectionExterna.connect();
 
-        const dbConfigExterna = getProdDbConfig(companiaExterna);
-        const dbConnectionExterna = mysql2.createConnection(dbConfigExterna);
-        dbConnectionExterna.connect();
+            // traer el shipmentIdExterno desde envios_historial o armar el qr pero necesito elt acking del envio
+            const sqlHistorial = "SELECT didLocal FROM envios_exteriores WHERE didExterno = ? AND superado = 0 AND elim = 0 LIMIT 1";
 
-        // traer el shipmentIdExterno desde envios_historial o armar el qr pero necesito elt acking del envio
-        const sqlHistorial = "SELECT didLocal FROM envios_exteriores WHERE didExterno = ? AND superado = 0 AND elim = 0 LIMIT 1";
-
-        const resultHistorial = await executeQuery(dbConnectionExterna, sqlHistorial, [shipmentId], true);
-        const shipmentIdExterno = resultHistorial[0].didLocal;
+            const resultHistorial = await executeQuery(dbConnectionExterna, sqlHistorial, [shipmentId], true);
+            shipmentIdExterno = resultHistorial[0].didLocal;
 
 
-        dbConnectionExterna.end();
+        } catch (error) {
+            throw new CustomException({
+                title: "Error de conexión",
+                message: `No se pudo conectar a la base de datos de la compañía externa. Error: ${error.message}`,
+            });
+
+        } finally {
+            dbConnectionExterna.end();
+        }
+
         // envio al microservicio eliminar envio de todas las tablas 
         const payload = {
             idEmpresa: companiaExterna.did,
@@ -66,6 +77,7 @@ export async function desasignar_web(dbConnection, company, userId, shipmentId, 
             userId: quien,
             desde: deviceFrom,
         };
+
 
         try {
             await fetch(URL_ELIMINAR_ENVIO, {
