@@ -29,8 +29,8 @@ export async function asignar_masivo(
     //si algun envio es ff lo saco de mi mi lista enviosAsign
     const ffIds = rowsff.map(r => r.did);
     const enviosAsignFiltered = enviosAsign.filter(e => !ffIds.includes(e));
-    console.log("Envios FF filtrados:", ffIds);
-    console.log("Envios a asignar despues de filtrar FF:", enviosAsignFiltered);
+    // console.log("Envios FF filtrados:", ffIds);
+    // console.log("Envios a asignar despues de filtrar FF:", enviosAsignFiltered);
 
     //todo necesito obetener el estado de cada paquete? para que?
 

@@ -18,6 +18,7 @@ const axiosInstance = axios.create({
 });
 
 export async function getShipmentIdFromQr(companyId, dataQr) {
+
     const startTime = performance.now();
 
     const payload = {

@@ -1,9 +1,15 @@
-import { executeQuery } from "../../db.js";
+import { executeQuery, getCompanyByCode, getProdDbConfig } from "../../db.js";
+import { choferEsLogistica } from "../../src/functions/choferEsLogistica.js";
+import { debugHttpError } from "../../src/functions/debugEndpoint.js";
 import { logCyan } from "../../src/functions/logsCustom.js";
 import { insertAsignacionesDB } from "../functions/insertAsignacionesDB.js";
+import mysql2 from "mysql2";
+
+const URL_ELIMINAR_ENVIO = "https://altaenvios.lightdata.com.ar/api/eliminarEnvio";
 
 
 export async function desasignar_web(dbConnection, company, userId, shipmentId, deviceFrom) {
+    const quien = userId;
 
     const sqlOperador =
         "SELECT operador, estado FROM envios_asignaciones WHERE didEnvio = ? AND superado = 0 AND elim = 0";
@@ -27,6 +33,52 @@ export async function desasignar_web(dbConnection, company, userId, shipmentId, 
             success: false,
             message: "Error al obtener el id del envio",
         };
+    }
+
+
+    const operadorEsLogistica = await choferEsLogistica(dbConnection, operador);
+
+
+    if (operadorEsLogistica) {
+
+
+
+        //traer de redis el did de la compania externa por el codvinculacion
+        const companiaExterna = await getCompanyByCode(operadorEsLogistica.codvinculacion);
+        // conectarme a nueva empresa
+
+        const dbConfigExterna = getProdDbConfig(companiaExterna);
+        const dbConnectionExterna = mysql2.createConnection(dbConfigExterna);
+        dbConnectionExterna.connect();
+
+        // traer el shipmentIdExterno desde envios_historial o armar el qr pero necesito elt acking del envio
+        const sqlHistorial = "SELECT didLocal FROM envios_exteriores WHERE didExterno = ? AND superado = 0 AND elim = 0 LIMIT 1";
+
+        const resultHistorial = await executeQuery(dbConnectionExterna, sqlHistorial, [shipmentId], true);
+        const shipmentIdExterno = resultHistorial[0].didLocal;
+
+
+        dbConnectionExterna.end();
+        // envio al microservicio eliminar envio de todas las tablas 
+        const payload = {
+            idEmpresa: companiaExterna.did,
+            did: shipmentIdExterno,
+            userId: quien,
+            desde: deviceFrom,
+        };
+
+        try {
+            await fetch(URL_ELIMINAR_ENVIO, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(payload),
+            });
+        } catch (error) {
+            debugHttpError(error, "desasignar - eliminar envio");
+        }
+
     }
     if (company.did == 4) {
         const setEstadoAsignacion =
