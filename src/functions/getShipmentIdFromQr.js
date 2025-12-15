@@ -7,14 +7,14 @@ import CustomException from "../../classes/custom_exception.js";
 const httpsAgent = new https.Agent({
     keepAlive: true,
     maxSockets: 100,
-    timeout: 10000, // tiempo máximo de socket en ms
+    timeout: 20000, // tiempo máximo de socket en ms
     family: 4, // fuerza IPv4, evita delay IPv6
 });
 
 // 🔹 Axios preconfigurado (usa el agente y timeout)
 const axiosInstance = axios.create({
     httpsAgent,
-    timeout: 5000, // 5 segundos máximo por request
+    timeout: 20000, // 5 segundos máximo por request
 });
 
 export async function getShipmentIdFromQr(companyId, dataQr) {
