@@ -1,7 +1,6 @@
 import { executeQuery, getCompanyByCode } from "../../db.js";
 import { debugHttpError } from "../../src/functions/debugEndpoint.js";
 import { getShipmentIdFromQr } from "../../src/functions/getShipmentIdFromQr.js";
-import { logCyan } from "../../src/functions/logsCustom.js";
 import { insertAsignacionesDB } from "../functions/insertAsignacionesDB.js";
 import { choferEsLogistica } from "../../src/functions/choferEsLogistica.js";
 
@@ -37,7 +36,6 @@ export async function desasignar(dbConnection, company, userId, body, deviceFrom
             message: "El paquete ya está desasignado.",
         };
     }
-    logCyan("El paquete está asignado");
 
     const operadorEsLogistica = await choferEsLogistica(dbConnection, operador);
 
@@ -91,7 +89,6 @@ export async function desasignar(dbConnection, company, userId, body, deviceFrom
         userId,
         deviceFrom,
     ]);
-    logCyan("Inserto en la tabla de asignaciones con el operador 0");
 
     // Actualizar asignaciones
     await executeQuery(
@@ -119,8 +116,6 @@ export async function desasignar(dbConnection, company, userId, body, deviceFrom
         [shipmentId]
     );
 
-    logCyan("Updateo las tablas");
-
     await insertAsignacionesDB(
         company.did,
         shipmentId,
@@ -129,10 +124,8 @@ export async function desasignar(dbConnection, company, userId, body, deviceFrom
         userId,
         deviceFrom
     );
-    logCyan("Inserto en la base de datos individual de asignaciones");
 
     // await updateRedis(company.did, shipmentId, 0);
-    logCyan("Updateo redis con la desasignación");
 
     const resultado = {
         feature: "asignacion",

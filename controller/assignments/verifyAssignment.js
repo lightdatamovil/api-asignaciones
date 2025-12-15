@@ -1,6 +1,5 @@
 import { executeQuery } from "../../db.js";
 import { getShipmentIdFromQr } from "../../src/functions/getShipmentIdFromQr.js";
-import { logCyan } from "../../src/functions/logsCustom.js";
 import { asignar } from "./assign.js";
 
 export async function verifyAssignment(
@@ -37,7 +36,6 @@ export async function verifyAssignment(
             message: "No se encontró el paquete",
         };
     }
-    logCyan("Obtengo el envío");
 
     let estadoAsignacion = envio.estadoAsignacion;
 
@@ -87,12 +85,9 @@ export async function verifyAssignment(
         },
 
     ];
-    logCyan("llegue 2");
 
     for (const err of errorCases) {
         if (err.condition) {
-            logCyan("llegue al caso error");
-            logCyan(err.log);
             if (err.tipo_mensaje) {
                 const insertSql = `INSERT INTO asignaciones_fallidas (operador, didEnvio, quien, tipo_mensaje, desde) VALUES (?, ?, ?, ?, ?)`;
                 await executeQuery(dbConnection, insertSql, [
@@ -109,7 +104,6 @@ export async function verifyAssignment(
             };
         }
     }
-    logCyan("llegue 3");
 
     const transitions = [
         {
@@ -145,23 +139,19 @@ export async function verifyAssignment(
     ];
 
     let transition = transitions.find(t => t.condition);
-    logCyan("llegue4");
 
     if (!transition) {
-        logCyan("llegue 3.1");
         return {
             success: false,
             message: "No se puede asignar el paquete.",
         };
     }
-    logCyan("llegue 3");
 
     await executeQuery(
         dbConnection,
         "UPDATE envios SET estadoAsignacion = ? WHERE superado = 0 AND elim = 0 AND did = ?",
         [transition.updateState, shipmentId], true
     );
-    logCyan(transition.log);
 
     await asignar(
         dbConnection,
@@ -171,7 +161,6 @@ export async function verifyAssignment(
         driverId,
         deviceFrom
     );
-    logCyan("Asignado correctamente");
 
     return { success: true, message: transition.message };
 }

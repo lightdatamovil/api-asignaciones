@@ -2,7 +2,6 @@
 import { executeQuery } from "../../db.js";
 import { checkIfFulfillment } from "../../src/functions/checkIfFulfillment.js";
 import { getShipmentIdFromQr } from "../../src/functions/getShipmentIdFromQr.js";
-import { logCyan } from "../../src/functions/logsCustom.js";
 import { crearTablaAsignaciones } from "../functions/crearTablaAsignaciones.js";
 import { crearUsuario } from "../functions/crearUsuario.js";
 import { insertAsignacionesDB } from "../functions/insertAsignacionesDB.js";
@@ -28,10 +27,8 @@ export async function asignar(
             };
         }
     }
-    logCyan("El paquete todavia no está asignado");
     const estadoQuery = `SELECT estado FROM envios WHERE superado=0 AND elim=0 AND did = ?`;
     const estadoRows = await executeQuery(dbConnection, estadoQuery, [shipmentId]);
-    logCyan("Obtengo el estado del paquete");
 
     if (estadoRows.length === 0) {
         return {
@@ -56,7 +53,6 @@ export async function asignar(
         userId,
         deviceFrom,
     ]);
-    logCyan("Inserto en la tabla de asignaciones");
 
     const did = result.insertId;
 
@@ -80,8 +76,6 @@ export async function asignar(
         queries.map(({ sql, values }) => executeQuery(dbConnection, sql, values))
     );
 
-    logCyan("Updateo las tablas");
-
     await insertAsignacionesDB(
         company.did,
         did,
@@ -90,10 +84,8 @@ export async function asignar(
         userId,
         deviceFrom
     );
-    logCyan("Inserto en la base de datos individual de asignaciones");
 
     // await updateRedis(company.did, shipmentId, driverId);
-    logCyan("Actualizo Redis con la asignación");
 
     const resultado = {
         feature: "asignacion",

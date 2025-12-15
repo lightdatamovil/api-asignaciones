@@ -2,7 +2,6 @@ import { CustomException } from "lightdata-tools";
 import { executeQuery, getCompanyByCode, getProdDbConfig } from "../../db.js";
 import { choferEsLogistica } from "../../src/functions/choferEsLogistica.js";
 import { debugHttpError } from "../../src/functions/debugEndpoint.js";
-import { logCyan } from "../../src/functions/logsCustom.js";
 import { insertAsignacionesDB } from "../functions/insertAsignacionesDB.js";
 import mysql2 from "mysql2";
 
@@ -25,7 +24,6 @@ export async function desasignar_web(dbConnection, company, userId, shipmentId, 
             message: "El paquete ya está desasignado.",
         };
     }
-    logCyan("El paquete está asignado");
 
     if (!shipmentId) {
 
@@ -108,7 +106,6 @@ export async function desasignar_web(dbConnection, company, userId, shipmentId, 
         userId,
         deviceFrom,
     ]);
-    logCyan("Inserto en la tabla de asignaciones con el operador 0");
 
     // Actualizar asignaciones
     await executeQuery(
@@ -131,8 +128,6 @@ export async function desasignar_web(dbConnection, company, userId, shipmentId, 
         [shipmentId]
     );
 
-    logCyan("Updateo las tablas");
-
     await insertAsignacionesDB(
         company.did,
         shipmentId,
@@ -141,10 +136,8 @@ export async function desasignar_web(dbConnection, company, userId, shipmentId, 
         userId,
         deviceFrom
     );
-    logCyan("Inserto en la base de datos individual de asignaciones");
 
     // await updateRedis(company.did, shipmentId, 0);
-    logCyan("Updateo redis con la desasignación");
 
     const resultado = {
         feature: "asignacion",

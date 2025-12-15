@@ -1,8 +1,9 @@
+import { getFechaConHoraLocalDePais } from "lightdata-tools";
 import { executeQueryFromPool } from "../../db.js";
 import { logGreen } from "./logsCustom.js";
 
 export async function crearLog(
-  empresa,
+  company,
   usuario,
   perfil,
   body,
@@ -15,7 +16,7 @@ export async function crearLog(
   const sqlLog = `INSERT INTO logs_v2 (empresa, usuario, perfil, body, tiempo, resultado, endpoint, metodo, exito) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
   const values = [
-    empresa,
+    company.did,
     usuario,
     perfil,
     JSON.stringify(body),
@@ -27,5 +28,5 @@ export async function crearLog(
   ];
 
   await executeQueryFromPool(sqlLog, values);
-  logGreen(`Log creado: ${JSON.stringify(values)}`);
+  logGreen(`Log creado ${getFechaConHoraLocalDePais(company.pais)}`);
 }
