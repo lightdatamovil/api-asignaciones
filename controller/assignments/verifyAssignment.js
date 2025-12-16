@@ -12,7 +12,6 @@ export async function verifyAssignment(
     deviceFrom
 ) {
     const shipmentId = await getShipmentIdFromQr(company.did, dataQr)
-    console.log("Shipment ID:", shipmentId);
 
     let hoy = new Date();
     hoy.setDate(hoy.getDate() - 3);
@@ -42,7 +41,6 @@ export async function verifyAssignment(
     let didCadete = envio.choferAsignado;
 
     let esElMismoCadete = didCadete === driverId;
-    console.log(esElMismoCadete, " - ", estadoAsignacion, " - ", profile);
 
     const errorCases = [
         {
