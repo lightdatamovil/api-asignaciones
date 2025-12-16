@@ -24,7 +24,7 @@ export async function desasignar(dbConnection, company, userId, body, deviceFrom
 
     const sqlOperador =
         "SELECT operador, estado FROM envios_asignaciones WHERE didEnvio = ? AND superado = 0 AND elim = 0";
-    const result = await executeQuery(dbConnection, sqlOperador, [shipmentId], true);
+    const result = await executeQuery(dbConnection, sqlOperador, [shipmentId]);
 
     const operador = result.length > 0 ? result[0].operador : 0;
 

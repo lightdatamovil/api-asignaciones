@@ -4,7 +4,7 @@ import { executeQuery } from "../../db.js";
 
 export async function choferEsLogistica(dbConnection, driver) {
     const query = `SELECT codvinculacion FROM sistema_usuarios_accesos WHERE usuario = ? AND superado = 0 AND elim = 0 limit 1`;
-    const verify = await executeQuery(dbConnection, query, [driver], true);
+    const verify = await executeQuery(dbConnection, query, [driver]);
 
 
     //verificando si codvinculacion no es null undefine o vacio

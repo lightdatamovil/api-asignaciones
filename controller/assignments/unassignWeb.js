@@ -54,7 +54,7 @@ export async function desasignar_web(dbConnection, company, userId, shipmentId, 
             // traer el shipmentIdExterno desde envios_historial o armar el qr pero necesito elt acking del envio
             const sqlHistorial = "SELECT didLocal FROM envios_exteriores WHERE didExterno = ? AND superado = 0 AND elim = 0 LIMIT 1";
 
-            const resultHistorial = await executeQuery(dbConnectionExterna, sqlHistorial, [shipmentId], true);
+            const resultHistorial = await executeQuery(dbConnectionExterna, sqlHistorial, [shipmentId]);
             shipmentIdExterno = resultHistorial[0].didLocal;
 
 

@@ -96,7 +96,7 @@ export async function verifyAssignment(
                     driverId,
                     err.tipo_mensaje,
                     deviceFrom,
-                ], true);
+                ]);
             }
             return {
                 success: false,
@@ -150,7 +150,7 @@ export async function verifyAssignment(
     await executeQuery(
         dbConnection,
         "UPDATE envios SET estadoAsignacion = ? WHERE superado = 0 AND elim = 0 AND did = ?",
-        [transition.updateState, shipmentId], true
+        [transition.updateState, shipmentId]
     );
 
     await asignar(

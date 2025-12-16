@@ -1,7 +1,6 @@
 import { LightdataORMHOTFIX } from "../../classes/LightdataORMHOTFIX.js";
 import { executeQuery } from "../../db.js";
 import { parseShipmentIds } from "../../src/functions/stringAArray.js";
-import CustomException from "../../classes/custom_exception.js";
 
 export async function asignar_masivo(
     dbConnection,
@@ -14,7 +13,7 @@ export async function asignar_masivo(
 
     //verificar algun ff
     const sqlff = ` SELECT did FROM envios WHERE superado = 0 AND elim = 52 AND did IN (${shipmentIds})  `;
-    const rowsff = await executeQuery(dbConnection, sqlff, [], true);
+    const rowsff = await executeQuery(dbConnection, sqlff, []);
 
     /*
     if (rowsff.length > 0) {
@@ -59,12 +58,11 @@ export async function asignar_masivo(
         throwIfNotExists: false,
         quien: userId,
         data: data,
-        log: true
     });
 
     console.log(data.length, "envios asignados");
 
-    await executeQuery(dbConnection, `UPDATE envios_asignaciones SET superado = 1 WHERE didEnvio IN (${shipmentIds}) AND did NOT IN (${insert})`, [], true);
+    await executeQuery(dbConnection, `UPDATE envios_asignaciones SET superado = 1 WHERE didEnvio IN (${shipmentIds}) AND did NOT IN (${insert})`, []);
 
     await LightdataORMHOTFIX.update({
         db: dbConnection,
@@ -73,7 +71,6 @@ export async function asignar_masivo(
         throwIfNotExists: false,
         quien: userId,
         data: { choferAsignado: driverId, costoActualizadoChofer: 0 },
-        log: true
     });
 
     /*
@@ -85,12 +82,11 @@ export async function asignar_masivo(
             throwIfNotExists: false,
             quien: userId,
             data: { superado: 1 },
-            log: true
         });
         */
 
     // { sql: `UPDATE ruteo_paradas SET superado = 1 WHERE superado=0 AND elim<>1 AND didPaquete = ?`, values: [shipmentId], },
-    await executeQuery(dbConnection, `UPDATE ruteo_paradas SET superado = 1 WHERE didPaquete IN (${shipmentIds})`, [], true);
+    await executeQuery(dbConnection, `UPDATE ruteo_paradas SET superado = 1 WHERE didPaquete IN (${shipmentIds})`, []);
 
     /*
         if (insert.length < data.length) {
